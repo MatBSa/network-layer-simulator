@@ -9,5 +9,8 @@ def main():
     demodulated_ask = ask_receive(ask_signal)
     print(f"ASK Demodulated Data: {demodulated_ask}")
 
+    # Modulação FSK
+    fsk_signal = fsk_transmit(data)
+
 if __name__ == "__main__":
     main()
