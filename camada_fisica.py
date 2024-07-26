@@ -80,3 +80,31 @@ def fsk_transmit(data, carrier_frequency_0=10, carrier_frequency_1=20, sampling_
         modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = carrier
     
     return modulated_signal
+
+def fsk_receive(modulated_signal, carrier_frequency_0=10, carrier_frequency_1=20, sampling_rate=100):
+    """
+    Demodulação FSK para recepção.
+
+    Args:
+    modulated_signal (np.array): Sinal modulado recebido.
+    carrier_frequency_0 (int): Frequência da portadora para bit 0 em Hz.
+    carrier_frequency_1 (int): Frequência da portadora para bit 1 em Hz.
+    sampling_rate (int): Taxa de amostragem em Hz.
+
+    Returns:
+    str: Sequência de bits demodulada.
+    """
+    t = np.linspace(0, len(modulated_signal) / sampling_rate, len(modulated_signal), endpoint=False)
+    demodulated_bits = []
+    
+    for i in range(0, len(modulated_signal), sampling_rate):
+        segment = modulated_signal[i:i + sampling_rate]
+        fft_segment = np.fft.fft(segment)
+        frequencies = np.fft.fftfreq(len(fft_segment), d=1/sampling_rate)
+        peak_frequency = np.abs(frequencies[np.argmax(np.abs(fft_segment))])
+        if np.isclose(peak_frequency, carrier_frequency_1, atol=1):
+            demodulated_bits.append('1')
+        else:
+            demodulated_bits.append('0')
+    
+    return ''.join(demodulated_bits)

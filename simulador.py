@@ -11,6 +11,8 @@ def main():
 
     # Modulação FSK
     fsk_signal = fsk_transmit(data)
+    demodulated_fsk = fsk_receive(fsk_signal)
+    print(f"FSK Demodulated Data: {demodulated_fsk}")
 
 if __name__ == "__main__":
     main()
