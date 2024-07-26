@@ -25,3 +25,30 @@ def ask_transmit(data, carrier_frequency=10, sampling_rate=100, amplitude_1=1, a
             modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = amplitude_0 * carrier[i * sampling_rate:(i + 1) * sampling_rate]
     
     return modulated_signal
+
+def ask_receive(modulated_signal, carrier_frequency=10, sampling_rate=100, amplitude_threshold=0.75):
+    """
+    Demodulação ASK para recepção.
+
+    Args:
+    modulated_signal (np.array): Sinal modulado recebido.
+    carrier_frequency (int): Frequência da portadora em Hz.
+    sampling_rate (int): Taxa de amostragem em Hz.
+    amplitude_threshold (float): Amplitude mínima para considerar bit 1.
+
+    Returns:
+    str: Sequência de bits demodulada.
+    """
+    t = np.linspace(0, len(modulated_signal) / sampling_rate, len(modulated_signal), endpoint=False)
+    carrier = np.sin(2 * np.pi * carrier_frequency * t)
+    demodulated_bits = []
+    
+    for i in range(0, len(modulated_signal), sampling_rate):
+        segment = modulated_signal[i:i + sampling_rate] * carrier[i:i + sampling_rate]
+        amplitude = np.mean(segment)
+        if amplitude > amplitude_threshold:
+            demodulated_bits.append('1')
+        else:
+            demodulated_bits.append('0')
+    
+    return ''.join(demodulated_bits)
