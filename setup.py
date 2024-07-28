@@ -35,7 +35,7 @@ setup(
     name = 'Simulador de Camada Física e Camada de Enlace',
     version = '0.0.1',
     author = 'Pedro, Matheus e Davi',
-    author_email = '211038271@aluno.unb.br, ',
+    author_email = '211038271@aluno.unb.br, 170053016@aluno.unb.br',
     packages = find_packages(),
     install_requires = get_requirements('requirements.txt')
 )
