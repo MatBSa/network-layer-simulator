@@ -1,4 +1,7 @@
-
+import numpy as np
+import socket, pickle
+import matplotlib.pyplot as plt
+from mod_8qam import Mod_8qam
 
 class Transmissor:
     def __init__(self, received_text: str, host="localhost", port=8888):
@@ -70,4 +73,4 @@ class Transmissor:
         return output
     
     # 8QAM METHOD
-    
+
