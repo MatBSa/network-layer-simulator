@@ -19,3 +19,7 @@ def crc_remainder(data, polynomial):
 def generate_crc(data, polynomial):
     remainder = crc_remainder(data, polynomial)
     return data + remainder
+
+def check_crc(data, polynomial):
+    remainder = crc_remainder(data, polynomial)
+    return remainder == '0' * (len(polynomial) - 1)
