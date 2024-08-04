@@ -1,7 +1,16 @@
 from camada_fisica import ask, fsk, plot_signal
+from camada_enlace import generate_parity
 
 def main():
     data = "1100101"  # Exemplo de dados binários
+
+    #########Camada de enlace
+
+    # Adicionando Paridade
+    data_with_parity = generate_parity(data)
+    print(f"Data with Parity: {data_with_parity}")
+
+    #########Camada física
     
     # Modulação ASK
     ask_signal = ask(data)
