@@ -1,11 +1,13 @@
-# Error Detection using Parity
+import binascii
+
+######################### Parity Bit #########################
 def generate_parity(data):
     return data + str(data.count('1') % 2)
 
 def check_parity(data):
     return data[:-1], data[-1] == str(data[:-1].count('1') % 2)
 
-# Error Detection using CRC
+########################### CRC-32 ###########################
 def crc_remainder(data, polynomial):
     data = data + '0' * (len(polynomial) - 1)
     data = list(data)
