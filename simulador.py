@@ -1,5 +1,5 @@
 from camada_fisica import ask, fsk, plot_signal
-from camada_enlace import generate_parity, check_parity
+from camada_enlace import generate_parity, check_parity, generate_crc
 
 def main():
     data = "1100101"  # Exemplo de dados binários
@@ -13,6 +13,11 @@ def main():
     # Verificando Paridade
     checked_data, parity_valid = check_parity(data_with_parity)
     print(f"Checked Data: {checked_data}, Parity Valid: {parity_valid}")
+    
+    # Adicionando CRC
+    polynomial = "1101"  # Exemplo de polinômio
+    data_with_crc = generate_crc(data, polynomial)
+    print(f"Data with CRC: {data_with_crc}")
 
     #########Camada física
     
