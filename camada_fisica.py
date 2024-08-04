@@ -1,25 +1,26 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 ######################### Amplitude Shift Keying (ASK) #########################
-def ask_transmit(data, carrier_frequency=10, sampling_rate=100, amplitude_1=1, amplitude_0=0.5):
+def ask(bit_array, carrier_frequency=10, sampling_rate=100, amplitude_1=1, amplitude_0=0.5):
     """
-    Modulação ASK para transmissão.
-
+    Implementação da modulação ASK.
+    
     Args:
-    data (str): Sequência de bits a serem modulados.
+    bit_array (str): Sequência de bits a serem modulados.
     carrier_frequency (int): Frequência da portadora em Hz.
     sampling_rate (int): Taxa de amostragem em Hz.
     amplitude_1 (float): Amplitude para bit 1.
     amplitude_0 (float): Amplitude para bit 0.
-
+    
     Returns:
     np.array: Sinal modulado.
     """
-    t = np.linspace(0, len(data), len(data) * sampling_rate, endpoint=False)
+    t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint=False)
     carrier = np.sin(2 * np.pi * carrier_frequency * t)
     modulated_signal = np.zeros(len(t))
     
-    for i, bit in enumerate(data):
+    for i, bit in enumerate(bit_array):
         if bit == '1':
             modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = amplitude_1 * carrier[i * sampling_rate:(i + 1) * sampling_rate]
         else:
@@ -27,52 +28,25 @@ def ask_transmit(data, carrier_frequency=10, sampling_rate=100, amplitude_1=1, a
     
     return modulated_signal
 
-def ask_receive(modulated_signal, carrier_frequency=10, sampling_rate=100, amplitude_threshold=0.75):
-    """
-    Demodulação ASK para recepção.
-
-    Args:
-    modulated_signal (np.array): Sinal modulado recebido.
-    carrier_frequency (int): Frequência da portadora em Hz.
-    sampling_rate (int): Taxa de amostragem em Hz.
-    amplitude_threshold (float): Amplitude mínima para considerar bit 1.
-
-    Returns:
-    str: Sequência de bits demodulada.
-    """
-    t = np.linspace(0, len(modulated_signal) / sampling_rate, len(modulated_signal), endpoint=False)
-    carrier = np.sin(2 * np.pi * carrier_frequency * t)
-    demodulated_bits = []
-    
-    for i in range(0, len(modulated_signal), sampling_rate):
-        segment = modulated_signal[i:i + sampling_rate] * carrier[i:i + sampling_rate]
-        amplitude = np.mean(segment)
-        if amplitude > amplitude_threshold:
-            demodulated_bits.append('1')
-        else:
-            demodulated_bits.append('0')
-    
-    return ''.join(demodulated_bits)
-
 ######################### Frequency Shift Keying (FSK) #########################
 
-def fsk_transmit(data, carrier_frequency_0=10, carrier_frequency_1=20, sampling_rate=100):
+def fsk(bit_array, carrier_frequency_0=10, carrier_frequency_1=20, sampling_rate=100):
     """
-    Modulação FSK para transmissão.
-
+    Implementação da modulação FSK.
+    
     Args:
-    data (str): Sequência de bits a serem modulados.
+    bit_array (str): Sequência de bits a serem modulados.
     carrier_frequency_0 (int): Frequência da portadora para bit 0 em Hz.
     carrier_frequency_1 (int): Frequência da portadora para bit 1 em Hz.
     sampling_rate (int): Taxa de amostragem em Hz.
-
+    
     Returns:
     np.array: Sinal modulado.
     """
-    t = np.linspace(0, len(data), len(data) * sampling_rate, endpoint=False)
+    t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint=False)
     modulated_signal = np.zeros(len(t))
     
-    for i, bit in enumerate(data):
+    for i, bit in enumerate(bit_array):
         if bit == '1':
             carrier = np.sin(2 * np.pi * carrier_frequency_1 * t[i * sampling_rate:(i + 1) * sampling_rate])
         else:
@@ -81,30 +55,13 @@ def fsk_transmit(data, carrier_frequency_0=10, carrier_frequency_1=20, sampling_
     
     return modulated_signal
 
-def fsk_receive(modulated_signal, carrier_frequency_0=10, carrier_frequency_1=20, sampling_rate=100):
-    """
-    Demodulação FSK para recepção.
-
-    Args:
-    modulated_signal (np.array): Sinal modulado recebido.
-    carrier_frequency_0 (int): Frequência da portadora para bit 0 em Hz.
-    carrier_frequency_1 (int): Frequência da portadora para bit 1 em Hz.
-    sampling_rate (int): Taxa de amostragem em Hz.
-
-    Returns:
-    str: Sequência de bits demodulada.
-    """
-    t = np.linspace(0, len(modulated_signal) / sampling_rate, len(modulated_signal), endpoint=False)
-    demodulated_bits = []
-    
-    for i in range(0, len(modulated_signal), sampling_rate):
-        segment = modulated_signal[i:i + sampling_rate]
-        fft_segment = np.fft.fft(segment)
-        frequencies = np.fft.fftfreq(len(fft_segment), d=1/sampling_rate)
-        peak_frequency = np.abs(frequencies[np.argmax(np.abs(fft_segment))])
-        if np.isclose(peak_frequency, carrier_frequency_1, atol=1):
-            demodulated_bits.append('1')
-        else:
-            demodulated_bits.append('0')
-    
-    return ''.join(demodulated_bits)
+def plot_signal(data, signal, title="Signal", filename="signal.png"):
+    t = np.linspace(0, len(data), len(signal), endpoint=False)
+    plt.figure(figsize=(10, 4))
+    plt.plot(t, signal)
+    plt.title(title)
+    plt.xlabel('Time')
+    plt.ylabel('Amplitude')
+    plt.grid(True)
+    plt.savefig(filename)
+    plt.close()
