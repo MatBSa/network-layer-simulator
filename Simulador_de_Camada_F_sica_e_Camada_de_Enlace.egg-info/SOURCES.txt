@@ -1,0 +1,7 @@
+README.md
+setup.py
+Simulador_de_Camada_F_sica_e_Camada_de_Enlace.egg-info/PKG-INFO
+Simulador_de_Camada_F_sica_e_Camada_de_Enlace.egg-info/SOURCES.txt
+Simulador_de_Camada_F_sica_e_Camada_de_Enlace.egg-info/dependency_links.txt
+Simulador_de_Camada_F_sica_e_Camada_de_Enlace.egg-info/requires.txt
+Simulador_de_Camada_F_sica_e_Camada_de_Enlace.egg-info/top_level.txt
