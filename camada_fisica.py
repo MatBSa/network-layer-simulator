@@ -105,6 +105,24 @@ def byte_insert(n_bytes_per_frame, binary_message, flag='01111110'):
     return frames
 
 
+# inserção de bits:
+#   1. contorna limitação da inserção de bytes (fato de usar 8 bits)
+#   2. enquadramento pode ser feito a nível de bits - quadros de qualquer tamanho
+#   3. cada quadro começa e termina com um padrão de bits especial 01111110
+#   4. essa sequência de bit especial é um byte de flag
+#   5. evitar a ocorrência da sequência de bits especiais na carga útil
+#   sempre que ocorre sequência de 5 bits '1', é inserido um bit '0' após ela
+def bit_insert(n_bits_per_frame, binary_message, flag='01111110'):
+    frames = []
+    # percorre toda a binary_message, de n em n bits por quadro que queremos
+    for i in range(0, len(binary_message), n_bits_per_frame):
+        # constroi o quadro transformando os n bits atuais que queremos (bits_array[i:i+n_bits_per_frame]) no quadro em uma string 
+        # ja adiciona a flag no comeco e no fim do quadro
+        frame = flag + ''.join(str(bit) for bit in bits_array[i:i+n_bits_per_frame]) + flag
+        frames.append(frame)
+        
+    return frames
+
 
 
 # 'receptor' receives a binary encoded message from the transmitter
@@ -122,11 +140,3 @@ if __name__ == '__main__':
     polar_nrz_msg = polar_nrz(binary_msg)
     manchester_msg = manchester(binary_msg)
     #print(text_conversor(binary_msg))
-    
-    bits_array = [0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]
-    n_bytes_per_frame = 3
-    frames = byte_insert(n_bytes_per_frame, bits_array)
-    print(frames)
-    print(frames == [['01111110', '01011010', '01111110'], ['01111110', '01011010', '01111110'], ['01111110', '01011010', '01111110']]
-)
-    #print(frames == [['00000010', '01011010'], ['00000010', '01011010'], ['00000010', '01011010']])
