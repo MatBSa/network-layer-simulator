@@ -1,76 +1,62 @@
 import numpy as np
-import socket, pickle
 import matplotlib.pyplot as plt
-from mod_8qam import Mod_8qam
 
-class Transmissor:
-    def __init__(self, received_text: str, host="localhost", port=8888):
-        self.host = host
-        self.port = port
-        self.received_text = received_text
-        self.bit_arrray = self.__text_2_binary(received_text) 
-    def __text_2_binary(self,text): # converter para binário
-        bits_str = ''
-        for byte in text.encode('utf8'):
-            byte = f'{byte:08b}' # converte o byte para uma string
-            bits_str += byte
-        return[int(bit) for bit in bits_str] #retorna uma lista de bits
-    def run(self, encoding_method, framing_method, error_correction_or_detection_method,  modulation_method):
-        self.encoded_bits = self.coder(encoding_method)
-        match encoding_method.lower():
-            case "bipolar": # 0 -> 0; -1 ou 1 -> 1
-                self.encoded_bits_cleaned = [0 if (b == 0) else 1 for b in self.encoded_bits]
-                
-        match framing_method.lower():
-            case "character_count":
-                self.frames = self.character_count_framing(
-                    self.encoded_bits_cleaned, 8)
-            case "byte_insertion":
-                self.frames = self.bytes_insertion_framing(
-                    self.encoded_bits_cleaned, 8)
-            case "bits_insertion":
-                self.frames = self.bits_insertion_framing(
-                    self.encoded_bits_cleaned, 8)
-
-        match error_correction_or_detection_method.lower():
-            case "even_parity":
-                self.frames_final = self.adjust_frames_even_parity(
-                    self.frames, framing_method)
-            case "crc":
-                self.frames_final = self.adjust_frames_crc(
-                    self.frames, framing_method)
-            case "hamming":
-                self.frames_final = self.adjust_frames_hamming(
-                    self.frames, framing_method)
-
-    # convert the frames matrix to a big bit vector
-        bits_vector = [bit for frame in self.frames_final for bit in frame]
-        match modulation_method.lower():
-            case "ask":
-                self.sinal = self.ASK(1, 1, bits_vector)
-            case "fsk":
-                self.sinal = self.FSK(1, 1, 2, bits_vector)
-            case "8qam":
-                self.sinal = self.QAM(1, 1, 2, bits_vector)
-        self.send_message(self.sinal)
-        return self.bit_arrray, self.encoded_bits, self.sinal
-    def coder(self, encoding_method):
-        match encoding_method.lower():
-            case "bipolar":
-                return self.polar_nrz_coder(self.bit_arrray)
+def qam8(bit_array, carrier_frequency=10, sampling_rate=100):
+    """
+    Implementação da modulação 8QAM.
     
-    # Bipolar METHOD
-    def metodo_bipolar(self, bit_array):
-        output = bit_array.copy()
-        flip = False
-        for i, bit in enumerate(output):
-            if bit == 1 and not flip:
-                output[i] = 1
-                flip = not flip
-            elif bit == 1 and flip:
-                output[i] = -1
-                flip = not flip
-        return output
+    Args:
+    bit_array (str): Sequência de bits a serem modulados. Deve ter um comprimento múltiplo de 3.
+    carrier_frequency (int): Frequência da portadora em Hz.
+    sampling_rate (int): Taxa de amostragem em Hz.
     
-    # 8QAM METHOD
+    Returns:
+    np.array: Sinal modulado.
+    """
+    if len(bit_array) % 3 != 0:
+        raise ValueError("O comprimento da sequência de bits deve ser múltiplo de 3")
+    
+    #Mapeamento de bits para simbolos 8QAM (I + jQ): onde I é a componente em fase e Q é a componente em quadratura
+    bit_to_symbol = { 
+        '000':(1 + 1j),
+        '001':(1 - 1j),
+        '010':(-1 + 1j),
+        '011':(-1 - 1j),
+        '100':(1 + 3j),
+        '101':(1 - 3j),
+        '110':(-1 + 3j),
+        '111':(-1 - 3j)
+    }
+    t = np.linspace(0, len(bit_array)//3, len(bit_array) // 3 * sampling_rate,endpoint=False)
+    carrier_cos = np.cos(2 * np.pi * carrier_frequency * t) # onda cossenoidal que representa a portadora para a compenente em fase 'I'
+    carrier_sin = np.sin(2 * np.pi * carrier_frequency * t) # onda senoidal que representa a portadora para a componente em quadratura 'Q'
+    modulated_signal = np.zeros(len(t))
 
+    for i in range(0, len(bit_array), 3):
+        bits = bit_array[i:i+3]
+        symbol = bit_to_symbol[bits]
+
+        I = symbol.real
+        Q = symbol.imag
+
+        modulated_signal[i//3*sampling_rate:(i//3+1)*sampling_rate] = I * carrier_cos[i//3*sampling_rate:(i//3+1) *sampling_rate] + Q * carrier_sin[i // 3 * sampling_rate:(i//3+1) * sampling_rate]
+
+    return modulated_signal
+
+# Função para plotar o sinal 
+def plot_signal_8qam(data, signal, title='Signal', filename = 'signal.png'):
+    t = np.linspace(0, len(data), len(signal), endpoin=False)
+    plt.figure(figsize=(10,4))
+    plt.plot(t,signal)
+    plt.title(title)
+    plt.xlabel('Time')
+    plt.ylabel('Amplitude')
+    plt.grid(True)
+    plt.savefig(filename)
+    plt.close()
+
+#Exemplo de uso
+bit_sequence = "110001101"
+qam8_signal = qam8(bit_sequence)
+
+plot_signal_8qam(bit_sequence, qam8_signal, title="8QAM Modulated Signal", filename="qam8_signal.png")
