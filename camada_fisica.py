@@ -55,8 +55,50 @@ def plot_signal_8qam(data, signal, title='Signal', filename = 'signal.png'):
     plt.savefig(filename)
     plt.close()
 
-#Exemplo de uso
+#Exemplo de uso 8QAM
 bit_sequence = "110001101"
 qam8_signal = qam8(bit_sequence)
-
 plot_signal_8qam(bit_sequence, qam8_signal, title="8QAM Modulated Signal", filename="qam8_signal.png")
+
+
+# Implementação da parte de Bipolar
+def bipolar_nrz(bit_array, amplitude = 1, sampling_rate=100):
+    """
+    Implementação da modulação Bipolar NRZ 
+
+    Args:
+    bit_array(str): Sequencia de bits a serem modulados. (0 a 1)
+    amplitude(float): Amplitude do sinal modulado. (define os niveis de tensao usados para rep os bits)
+    sampling_rate(int): Taxa de amostragem em Hz.
+
+    Return:
+    np.array: Sinal modulado.
+    """
+    t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint = False)
+    modulated_signal = np.zeros(len(t)) # cria um tempo de 0 ate o comp da seq de bits, pontos mostrados c a'sampling.rate'
+
+    for i, bit in enumerate(bit_array):
+        if bit == '1': # valor positivo da amplitude
+            modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = amplitude
+        else: #bit == '0', recebe valor negativo de amplitude
+            modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = -amplitude
+    return modulated_signal
+
+# Função para plotar o sinal bipolar
+def plot_signal_bip(data,signal, title="Signal", filename="signal.png"):
+    t = np.linspace(0, len(data), len(signal), endpoint=False)
+    plt.figure(figsize=(10, 4))
+    plt.plot(t, signal)
+    plt.title(title)
+    plt.xlabel('Time')
+    plt.ylabel('Amplitude')
+    plt.grid(True)
+    plt.savefig(filename)
+    plt.close()
+
+# Exemplo de uso
+bit_sequence = "10101001"
+bipolar_signal = bipolar_nrz(bit_sequence)
+
+plot_signal(bit_sequence, bipolar_signal, title="Bipolar NRZ Modulated Signal", filename="bipolar_nrz_signal.png")
+
