@@ -17,7 +17,7 @@ from camada_fisica import binary_conversor, text_conversor
 #   1. campo no cabeçalho especifica número de bytes no quadro (tamanho do quadro)
 #   2. camada de destino sabe quantos bytes o quadro contém - onde está o seu fim
  
-# divide a lista de bits em bytes - bytes_list
+# divide a lista de bits em bytes 
 # loop continua até que bytes_list esteja vazio
 # calcula em cada loop o tamanho do quadro = min(n_bytes_restantes, tam_max_quadro - 1)
 # cria um quadro -> cabeçalho (tamanho do quadro em binario) e os bytes no quadro
@@ -30,7 +30,7 @@ def char_count(n_bytes_per_frame, binary_message):
     for i in range(0, len(bytes), n_bytes_per_frame - 1):
         len_frame = min(len(bytes) - i, n_bytes_per_frame - 1)
         # adds 1 to consider the header (character count method)
-        frame = [f"{len_frame + 1:08b}"] + [f"{byte:08b}" for byte in bytes[i:i + len_frame]]  # +1 for the header
+        frame = [f"{format(len_frame + 1, '08b')}"] + [f"{format(byte, '08b')}" for byte in bytes[i:i + len_frame]]  # +1 for the header
         frames.append(frame)
         
     return frames
@@ -65,7 +65,7 @@ def byte_insert(n_bytes_per_frame, binary_message, flag='01111110'):
         else:
             len_frame = len(bytes) - i
         # adds 1 to consider the header (character count method)
-        frame = [flag] + [f"{byte:08b}" for byte in bytes[i:i + len_frame]]  + [flag] # +1 for the header
+        frame = [flag] + [f"{format(byte, '08b')}" for byte in bytes[i:i + len_frame]]  + [flag] # +1 for the header
         frames.append(frame)
         
     return frames
@@ -88,6 +88,60 @@ def bit_insert(n_bits_per_frame, binary_message, flag='01111110'):
         frames.append(frame)
         
     return frames
+
+
+# receptor -> receives from the transmitter a binary message to be decoded into text
+# in each function below, one per framing method, we remove the 'additional info' that are not part of the message itself, like flags and character counts
+# filter only the message of each frame
+
+
+# obtains each frame separately, removing their headers (which contains the number of bytes in the frame)
+# obtains a list containing the bits of each frame (concatenated in str, removing header - number of bytes in the frame) and the additional bits
+def get_char_count_frames_bits(binary_message):
+    byte_units = [binary_message[i:i+8] for i in range(0, len(binary_message), 8)]
+    bytes = [''.join(str(bit) for bit in byte) for byte in byte_units]
+    str_frames_without_headers, additional_bits = list(), list()
+
+    i = 0
+    for _ in range(len(bytes)):
+        if i >= len(bytes):
+            break
+        
+        # obtain integer (from base 2) number of bytes in current frame (header info)
+        len_frame = int(bytes[i], 2)
+        add_bits = int(bytes[i + 1], 2)
+        additional_bits.append(add_bits)
+        
+        # add frame without header to the final list of frames (already in str format, each frame)
+        str_frame_without_header = ''.join(bytes[i + 2:i + len_frame])
+        str_frames_without_headers.append(str_frame_without_header)
+        
+        # move to the next frame
+        i += len_frame
+
+    return str_frames_without_headers, additional_bits
+
+# obtain frames (without flags) and additional bits information
+# obtains a list containing the bits of each frame (concatenated in str, removing the flag delimiting each frame) and the additional bits
+def get_byte_insert_frames_bits(binary_message, flag='01111110'):
+    str_frames_without_flags, additional_bits, frame = list(), list()
+    byte_units = [binary_message[i:i+8] for i in range(0, len(binary_message), 8)]
+    bytes = [''.join(str(bit) for bit in byte) for byte in byte_units]
+
+    for byte in bytes:
+        if byte != flag:
+            frame.append(byte)
+        else:
+            if frame:  
+                add_bits = int(frame[0], 2) # first byte of the frame (not being flag) will be the additional bits
+                additional_bits.append(add_bits)
+                
+                str_frame_without_flag = ''.join(frame[1:]) # then, we will have the frame bytes, converted into a unique string
+                str_frames_without_flags.append(str_frame_without_flag)
+                frame.clear()        
+
+    return str_frames_without_flags, additional_bits
+
 
 
 if __name__ == '__main__':
