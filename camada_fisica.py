@@ -3,19 +3,6 @@ import matplotlib.pyplot as plt
 
 ######################### Amplitude Shift Keying (ASK) #########################
 def ask(bit_array, carrier_frequency=10, sampling_rate=100, amplitude_1=1, amplitude_0=0.5):
-    """
-    Implementação da modulação ASK.
-    
-    Args:
-    bit_array (str): Sequência de bits a serem modulados.
-    carrier_frequency (int): Frequência da portadora em Hz.
-    sampling_rate (int): Taxa de amostragem em Hz.
-    amplitude_1 (float): Amplitude para bit 1.
-    amplitude_0 (float): Amplitude para bit 0.
-    
-    Returns:
-    np.array: Sinal modulado.
-    """
     t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint=False)
     carrier = np.sin(2 * np.pi * carrier_frequency * t)
     modulated_signal = np.zeros(len(t))
@@ -30,18 +17,6 @@ def ask(bit_array, carrier_frequency=10, sampling_rate=100, amplitude_1=1, ampli
 
 ######################### Frequency Shift Keying (FSK) #########################
 def fsk(bit_array, carrier_frequency_0=10, carrier_frequency_1=20, sampling_rate=100):
-    """
-    Implementação da modulação FSK.
-    
-    Args:
-    bit_array (str): Sequência de bits a serem modulados.
-    carrier_frequency_0 (int): Frequência da portadora para bit 0 em Hz.
-    carrier_frequency_1 (int): Frequência da portadora para bit 1 em Hz.
-    sampling_rate (int): Taxa de amostragem em Hz.
-    
-    Returns:
-    np.array: Sinal modulado.
-    """
     t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint=False)
     modulated_signal = np.zeros(len(t))
     
