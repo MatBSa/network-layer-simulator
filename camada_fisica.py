@@ -29,7 +29,6 @@ def ask(bit_array, carrier_frequency=10, sampling_rate=100, amplitude_1=1, ampli
     return modulated_signal
 
 ######################### Frequency Shift Keying (FSK) #########################
-
 def fsk(bit_array, carrier_frequency_0=10, carrier_frequency_1=20, sampling_rate=100):
     """
     Implementação da modulação FSK.
