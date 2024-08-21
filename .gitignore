@@ -3,3 +3,7 @@ __pycache__/
 
 # images
 *.png
+
+/venv
+
+/Simulador_de_Camada_F_sica_e_Camada_de_Enlace.egg-info
