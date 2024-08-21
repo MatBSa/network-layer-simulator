@@ -100,5 +100,5 @@ def plot_signal_bip(data,signal, title="Signal", filename="signal.png"):
 bit_sequence = "10101001"
 bipolar_signal = bipolar_nrz(bit_sequence)
 
-plot_signal(bit_sequence, bipolar_signal, title="Bipolar NRZ Modulated Signal", filename="bipolar_nrz_signal.png")
+plot_signal_bip(bit_sequence, bipolar_signal, title="Bipolar NRZ Modulated Signal", filename="bipolar_nrz_signal.png")
 
