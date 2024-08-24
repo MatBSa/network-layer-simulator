@@ -1,54 +1,58 @@
 import streamlit as st
 import numpy as np
 import os
-from camada_fisica import qam8, bipolar_nrz, ask, fsk, plot_signal
+from camada_fisica import (qam8, bipolar_nrz, polar_nrz, ask, fsk, plot_signal, manchester, binary_conversor, plot_signal_8qam, plot_signal_bip)
+from camada_enlace import (char_count, byte_insert, bit_insert, check_crc, generate_parity, generate_crc, check_parity)
 
-#Função para plot da imagem
+# Função para carregar e exibir a imagem
 def exibir_imagem(caminho):
     st.image(caminho, use_column_width=True)
-    
-st.sidebar.title("Simulador de Transmissão de Sinais")
 
-st.sidebar.header("Transmissor")
+# Título da aplicação
+st.title("Simulador Camada Física e de Enlace")
 
-texto = st.sidebar.text_area("Insira o texto a ser transmitido")
+# Barra lateral (Esquerda) - Transmissor e Modulador
+message = st.text_input("Digite a mensagem a ser transmitida:")
 
-codificacao = st.sidebar.radio(
-    "Escolha o tipo de transmissor",
-    ("NRZ","Manchester","Bipolar")
-)
-# Botao para transmissão
-if st.sidebar.button("Transmitir"):
-    st.sidebar.write(f"Transmitindo o texto: '{texto}' usando {codificacao}")
+# Escolha da codificação de linha
+line_code = st.selectbox("Escolha o tipo de codificação:", ["NRZ", "Manchester", "Bipolar"])
 
-#Seção Modulador
-st.sidebar.header("Modulador")
-modulacao = st.sidebar.radio(
-    "Escolha o tipo de modulação",
-    ("ASK","FSK","8-QAM")
-)
+# Seção Modulador
+modulacao = st.selectbox("Escolha o tipo de Modulação:", ("ASK", "FSK", "8-QAM"))
 
-# Parte da direita
-st.subheader("Receptor")
+# Botão para criar o sinal
+if st.button("Criar Sinal"):
+    # Converte a mensagem em binário
+    binary_message = binary_conversor(message)
+    binary_message_str = ''.join(map(str, binary_message))
 
-st.write("Aqui será plotado o sinal recebido") #espaço para o sinal recebido
+    # Aplicando a codificação
+    if line_code == "NRZ":
+        coded_signal = polar_nrz(binary_message)
+    elif line_code == "Manchester":
+        coded_signal = manchester(binary_message)
+    elif line_code == "Bipolar":
+        coded_signal = bipolar_nrz(binary_message_str)
 
-#enquadramento
-st.subheader("Enquadramento")
-enquadramento =st.radio(
-    "Escolha o tipo de enquadramento:",
-    ("Cont. de caracteres", "Inserção de Bits", "Inserção de Bytes")
-)
+    st.write(f"Sinal codificado ({line_code})")
 
-#detecção/correção de erro
-st.subheader("Detecção/Correção de Erro")
-correcao_de_erro = st.radio(
-    "Escolha o método de detecção/correção de erro:",
-    ("Bit de Paridade Par","CRC32","Hamming")
-)
+    # Aplicando a modulação
+    if modulacao == "ASK":
+        modulated_signal = ask(binary_message_str)
+    elif modulacao == "FSK":
+        modulated_signal = fsk(binary_message_str)
+    elif modulacao == "8QAM":
+        modulated_signal = qam8(binary_message_str)
 
-st.write(f"Texto transmitido: {texto}")
-st.write(f"Codificação escolhida: {codificacao}")
-st.write(f"Modulação escolhida: {modulacao}")
-st.write(f"Enquadramento escolhido: {enquadramento}")
-sr.write(f"Detecção/Correção de Erro escolhida: {correcao_de_erro}")
+    st.write(f"Sinal modulado ({modulacao})")
+
+    # Plotando o gráfico do sinal modulado
+    if modulacao == "8QAM":
+        plot_signal_8qam(binary_message_str, modulated_signal, title=f"Sinal modulado - {modulacao}")
+    elif line_code == "Bipolar":
+        plot_signal_bip(binary_message_str, modulated_signal, title=f"Sinal modulado - {modulacao}")
+    else:
+        plot_signal(binary_message_str, modulated_signal, title=f"Sinal modulado - {modulacao}")
+
+    # Exibindo a imagem gerada
+    exibir_imagem("signal.png")
