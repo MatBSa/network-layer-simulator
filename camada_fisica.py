@@ -45,7 +45,7 @@ def qam8(bit_array, carrier_frequency=10, sampling_rate=100):
 
 # Função para plotar o sinal 
 def plot_signal_8qam(data, signal, title='Signal', filename = 'signal.png'):
-    t = np.linspace(0, len(data), len(signal), endpoin=False)
+    t = np.linspace(0, len(data), len(signal), endpoint=False)
     plt.figure(figsize=(10,4))
     plt.plot(t,signal)
     plt.title(title)
