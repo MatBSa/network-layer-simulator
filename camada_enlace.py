@@ -204,3 +204,95 @@ def generate_crc(data, polynomial):
 def check_crc(data, polynomial):
     remainder = crc_remainder(data, polynomial)
     return remainder == '0' * (len(polynomial) - 1)
+
+
+########################## HAMMING #########################
+
+
+# TRANSMISSOR
+# 1. palavra de codigo de n bits -> m bits de dados e r bits de paridade
+# 2**r >= m + r + 1 (formula para calcular o numero de bits de paridade r necessarios)
+# 2. comeca preenchendo com bits zero as posicoes na mensagem em que temos bits de verificacao (potencias de dois)
+# 3. insere 0 nas posicoes dos bits de paridade inicialmente (posicoes que sao potencias de dois)
+# 4. para cada uma dessas potencias, calcula o seu bit de paridade (0/1) com base na soma XOR de todas as outras posicoes que influenciam-no
+
+def calcular_bit_paridade(array, potencia_de_dois):
+    # verificar todos os bits de dados que contribuem para a paridade dessa potencia_de_dois (posicao da respectiva potencia de dois)
+    # lógica do bit de paridade: soma XOR de todos os bits que influenciam
+    valor_paridade = 0        # armazenar a soma XOR de todos os bits que influenciam a paridade dessa potencia de dois
+    i = potencia_de_dois - 1  # converter para índice baseado em zero
+    
+    while i < len(array):
+        # seleciona blocos de bits que começam na posição 'i' e têm tamanho 'potencia_de_dois'
+        bloco = array[i:i + potencia_de_dois]
+        valor_paridade ^= sum(bloco)        # soma XOR sobre o bloco
+        i += 2 * potencia_de_dois           # pula para o próximo bloco relevante
+    
+    return valor_paridade % 2               # retorna 0 ou 1
+
+
+def hamming(binary_message):
+    
+    # calcula o numero de bits de paridade necessarios: 2**r >= m + r + 1
+    num_parity_bits = 0
+    while (2 ** num_parity_bits) < (len(binary_message) + num_parity_bits + 1):
+        num_parity_bits += 1
+    
+    # insere zero inicialmente nas posicoes correspondentes a bits de paridade (potencias de dois)
+    parity_zero_filled = []
+    j = 0  # indice para bits de dados
+    k = 1  # posicao no array com bits de paridade
+    
+    for i in range(1, len(binary_message) + num_parity_bits + 1):
+        if i == 2 ** (k - 1):        # verifica se a posicao e uma potencia de dois
+            parity_zero_filled.append(0)
+            k += 1
+        else:
+            parity_zero_filled.append(binary_message[j])
+            j += 1
+
+
+    # para cada bit de paridade, calcula o seu valor (1 ou 0) e insere no array final
+    for i in range(num_parity_bits):
+        potencia_de_dois = 2 ** i           # potencia de dois correspondente à posição (bit de paridade 0 -> 2 ** 0 = 1)
+        bit_paridade = calcular_bit_paridade(parity_zero_filled, potencia_de_dois)
+        parity_zero_filled[potencia_de_dois - 1] = bit_paridade     # insere na posicao da potencia de dois (-1 para contar desde indice 0) o respectivo bit de paridade dessa potencia
+    
+    return parity_zero_filled
+
+
+# RECEPTOR
+def receive_hamming(binary_message_with_parity):
+    # numero de bits de paridade (r): 2**r >= m + r + 1
+    num_parity_bits = 0
+    while (2 ** num_parity_bits) < (len(binary_message_with_parity)):
+        num_parity_bits += 1
+
+    # inicializa a lista para armazenar os bits de paridade extraídos da mensagem
+    parity_bits = [0] * num_parity_bits
+
+    # percorre a mensagem, verificando e ajustando os bits de paridade
+    for i in range(num_parity_bits):
+        potencia_de_dois = 2 ** i           # Calcula a posição da potência de dois (posição do bit de paridade)
+        bit_paridade_calculado = calcular_bit_paridade(binary_message_with_parity, potencia_de_dois)
+        parity_bits[i] = bit_paridade_calculado
+
+    # verifica se há algum erro na codificação de Hamming
+    erro_posicao = sum([bit * (2 ** idx) for idx, bit in enumerate(parity_bits)])
+
+    if erro_posicao == 0:
+        print("Sem erros.")
+    else:
+        print(f"Erro detectado na posição {erro_posicao}.")
+        # corrige o erro invertendo o bit na posição identificada
+        binary_message_with_parity[erro_posicao - 1] ^= 1
+        print(f"Erro corrigido na posição {erro_posicao}.")
+
+    # retorna a mensagem corrigida
+    return binary_message_with_parity
+
+    
+if __name__ == '__main__':
+    a = [0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1]
+    print(a.bit_count())
+    
