@@ -262,7 +262,7 @@ def hamming(binary_message):
 
 
 # RECEPTOR
-def receive_hamming(binary_message_with_parity):
+def receive_hamming(binary_message_with_parity, additional_bits_list):
     # numero de bits de paridade (r): 2**r >= m + r + 1
     num_parity_bits = 0
     while (2 ** num_parity_bits) < (len(binary_message_with_parity)):
@@ -293,6 +293,7 @@ def receive_hamming(binary_message_with_parity):
 
     
 if __name__ == '__main__':
-    a = [0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1]
-    print(a.bit_count())
+    print(text_conversor([0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]))
+    print('ZZZ')
+    # nao aplicar nenhuma codificacao nem nada, receber ZZZ la no receptor
     

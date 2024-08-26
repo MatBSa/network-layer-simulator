@@ -1,58 +1,65 @@
 import streamlit as st
 import numpy as np
 import os
-from camada_fisica import (qam8, bipolar_nrz, polar_nrz, ask, fsk, plot_signal, manchester, binary_conversor, plot_signal_8qam, plot_signal_bip)
-from camada_enlace import (char_count, byte_insert, bit_insert, check_crc, generate_parity, generate_crc, check_parity)
+from camada_fisica import *
+from camada_enlace import *
+from receptor import *
+from transmissor import *
 
-# Função para carregar e exibir a imagem
+
+# carregar e exibir imagem
 def exibir_imagem(caminho):
     st.image(caminho, use_column_width=True)
 
-# Título da aplicação
-st.title("Simulador Camada Física e de Enlace")
+st.title("Simulador - Camada Física e de Enlace")
 
-# Barra lateral (Esquerda) - Transmissor e Modulador
-message = st.text_input("Digite a mensagem a ser transmitida:")
+mensagem = st.text_input("Digite a mensagem a ser transmitida:", key='mensagem')
 
-# Escolha da codificação de linha
-line_code = st.selectbox("Escolha o tipo de codificação:", ["NRZ", "Manchester", "Bipolar"])
+# codificacao
+codificacao = st.selectbox("Escolha o tipo de codificação:", ['Escolher', "nrz", "bipolar", "manchester"], key='codificacao')
 
-# Seção Modulador
-modulacao = st.selectbox("Escolha o tipo de Modulação:", ["ASK", "FSK", "8-QAM"])
+# enquadramento
+enquadramento = st.selectbox("Escolha o tipo de enquadramento:", ['Escolher', "contagem de caracteres", "insercao de bytes", "insercao de bits"], key='enquadramento')
 
-# Botão para criar o sinal
-if st.button("Criar Sinal"):
-    # Converte a mensagem em binário
-    binary_message = binary_conversor(message)
-    binary_message_str = ''.join(map(str, binary_message))
+# deteccao e correcao de erros
+erro = st.selectbox("Escolha o método de detecção/correção de erros:", ['Escolher', "paridade", "crc32", "hamming"], key='erro')
 
-    # Aplicando a codificação
-    if line_code == "NRZ":
-        coded_signal = polar_nrz(binary_message)
-    elif line_code == "Manchester":
-        coded_signal = manchester(binary_message)
-    elif line_code == "Bipolar":
-        coded_signal = bipolar_nrz(binary_message_str)
+# modulacao
+modulacao = st.selectbox("Escolha o tipo de Modulação:", ['Escolher', "ask", "fsk", "8qam"], key='modulacao')
 
-    st.write(f"Sinal codificado ({line_code})")
+def reset():
+    st.session_state.mensagem = ''
+    st.session_state.codificacao = 'Escolher'
+    st.session_state.enquadramento = 'Escolher'
+    st.session_state.erro = 'Escolher'
+    st.session_state.modulacao = 'Escolher'
 
-    # Aplicando a modulação
-    if modulacao == "ASK":
-        modulated_signal = ask(coded_signal)
-    elif modulacao == "FSK":
-        modulated_signal = fsk(coded_signal)
-    elif modulacao == "8QAM":
-        modulated_signal = qam8(coded_signal)
+st.button('Limpar', on_click=reset)
 
-    st.write(f"Sinal modulado ({modulacao})")
+if st.button("Enviar mensagem"):
+    st.markdown('1 -> Inicia servidor')
+    print(f'Mensagem: {mensagem}, codificação: {codificacao}, enquadramento: {enquadramento}, erro: {erro}, modulação: {modulacao}')
+    st.markdown(f'Mensagem: {mensagem}, codificação: {codificacao}, enquadramento: {enquadramento}, erro: {erro}, modulação: {modulacao}')
+    
+    inicia_servidor()
+    
+    # text, encoding, modulation, framing, error_detection -> pars
+    # transmissor -> run -> result
+    
+    # aplica os metodos escolhidos e transmite pro receptor os dados
+    dados_transmitidos = transmissor(mensagem,
+                                     codificacao,
+                                     enquadramento,
+                                     erro,
+                                     modulacao)
 
-    # Plotando o gráfico do sinal modulado
-    if modulacao == "8QAM":
-        plot_signal_8qam(binary_message_str, modulated_signal, title=f"Sinal modulado - {modulacao}")
-    elif modulacao == "ASK":
-        plot_signal(binary_message_str, modulated_signal, title=f"Sinal modulado - {modulacao}")
-    elif modulacao == "FSK":
-        plot_signal(binary_message_str, coded_signal, title=f"Sinal modulado - {modulacao}")
+    print('Sinal transmitido', dados_transmitidos)
 
-    # Exibindo a imagem gerada
-    exibir_imagem("signal.png")
+    # receber mensagem do transmissor 
+    #msg_rec_orig, msg_rec_bits, msg_rec_rexti = receptor(codificacao, enquadramento, erro)
+    msg_binaria, msg_recebida_texto = receptor(codificacao, enquadramento, erro)
+    print('Mensagem binaria recebida no receptor: ', msg_binaria)
+    print('Msg decodificada pelo receptor: ', msg_recebida_texto)
+    print('Sinal transmitido', dados_transmitidos)
+    #st.markdown('Msg decodificada pelo receptor: ', msg_recebida_texto)
+

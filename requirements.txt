@@ -1,4 +1,5 @@
 numpy
 matplotlib
 streamlit
+sockets
 -e .
