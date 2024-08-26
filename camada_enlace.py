@@ -200,17 +200,61 @@ def check_parity(data):
     
     return data[:-1], data[-1] == str(data[:-1].count('1') % 2)
 
+def count_characters_frame(data):
+    """
+    Adiciona uma contagem de caracteres no início do quadro.
+    """
+    length = len(data)
+    length_str = f"{length:04d}"  # Supondo um comprimento fixo de 4 dígitos para a contagem.
+    return length_str + data
+
+def count_characters_unframe(data):
+    """
+    Remove a contagem de caracteres e retorna o dado.
+    """
+    if len(data) < 4:
+        raise ValueError("Dados muito curtos para conter uma contagem de caracteres de 4 dígitos.")
+    length_str = data[:4]
+    data = data[4:]
+    expected_length = int(length_str)
+    if len(data) != expected_length:
+        raise ValueError("O comprimento dos dados não corresponde à contagem de caracteres.")
+    return data
+
+def insert_byte(data, escape_char='\\'):
+    """
+    Insere um caractere de escape antes de caracteres especiais para evitar confusão com delimitadores.
+    """
+    special_chars = [escape_char, '\n', '\r']  # Exemplo de caracteres especiais a escapar.
+    for char in special_chars:
+        data = data.replace(char, escape_char + char)
+    return data
+
+def remove_byte(data, escape_char='\\'):
+    """
+    Remove o caractere de escape dos dados.
+    """
+    special_chars = [escape_char + char for char in ['\\', '\n', '\r']]
+    for escaped_char in special_chars:
+        data = data.replace(escaped_char, special_chars[special_chars.index(escaped_char)][1:])
+    return data
+
 def frame_data_parity(data):
     """
-    Ajusta os dados para incluir o bit de paridade.
+    Ajusta os dados para incluir o bit de paridade, contando caracteres e inserindo bytes se necessário.
     """
-    return generate_parity(data)
+    data_with_parity = generate_parity(data)
+    data_with_count = count_characters_frame(data_with_parity)
+    data_with_escape = insert_byte(data_with_count)
+    return data_with_escape
 
 def unframe_data_parity(data):
     """
-    Remove o bit de paridade dos dados ajustados e verifica a integridade.
+    Remove o bit de paridade dos dados ajustados e verifica a integridade, removendo a contagem de caracteres e bytes inseridos.
     """
-    data, valid_parity = check_parity(data)
+    data_without_escape = remove_byte(data)
+    data_without_count = count_characters_unframe(data_without_escape)
+    data, valid_parity = check_parity(data_without_count)
     return data, valid_parity
 
 ########################### CRC-32 ###########################
@@ -254,15 +298,20 @@ def check_crc(data, polynomial):
 
 def frame_data_crc(data, polynomial):
     """
-    Ajusta os dados para incluir o CRC.
+    Ajusta os dados para incluir o CRC, contando caracteres e inserindo bytes se necessário.
     """
-    return generate_crc(data, polynomial)
+    data_with_crc = generate_crc(data, polynomial)
+    data_with_count = count_characters_frame(data_with_crc)
+    data_with_escape = insert_byte(data_with_count)
+    return data_with_escape
 
 def unframe_data_crc(data, polynomial):
     """
-    Remove o CRC dos dados ajustados e verifica a integridade.
+    Remove o CRC dos dados ajustados e verifica a integridade, removendo a contagem de caracteres e bytes inseridos.
     """
-    data, valid_crc = check_crc(data, polynomial)
+    data_without_escape = remove_byte(data)
+    data_without_count = count_characters_unframe(data_without_escape)
+    data, valid_crc = check_crc(data_without_count, polynomial)
     return data, valid_crc
 
 
