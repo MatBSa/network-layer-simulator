@@ -180,14 +180,45 @@ def get_bit_insert_frames_bits(binary_message, flag='01111110', crc=True):
     return str_frames_without_flags, additional_bits
     
 ######################### Parity Bit #########################
+
 def generate_parity(data):
+    """
+    Gera um bit de paridade para a string `data`.
+    """
     return data + str(data.count('1') % 2)
 
 def check_parity(data):
+    """
+    Verifica a paridade do dado e retorna a string sem o bit de paridade e um booleano
+    indicando a validade.
+    """
+    if len(data) == 0:
+        raise ValueError("Dados de entrada não podem estar vazios.")
+        
+    if not data[-1] in ['0', '1']:
+        raise ValueError("O último caractere deve ser o bit de paridade.")
+    
     return data[:-1], data[-1] == str(data[:-1].count('1') % 2)
 
+def frame_data_parity(data):
+    """
+    Ajusta os dados para incluir o bit de paridade.
+    """
+    return generate_parity(data)
+
+def unframe_data_parity(data):
+    """
+    Remove o bit de paridade dos dados ajustados e verifica a integridade.
+    """
+    data, valid_parity = check_parity(data)
+    return data, valid_parity
+
 ########################### CRC-32 ###########################
+
 def crc_remainder(data, polynomial):
+    """
+    Calcula o resto da divisão do dado pela `polynomial`.
+    """
     data = data + '0' * (len(polynomial) - 1)
     data = list(data)
     polynomial = list(polynomial)
@@ -198,12 +229,41 @@ def crc_remainder(data, polynomial):
     return ''.join(data[-(len(polynomial) - 1):])
 
 def generate_crc(data, polynomial):
+    """
+    Gera um código CRC para o dado com base na `polynomial`.
+    """
     remainder = crc_remainder(data, polynomial)
     return data + remainder
 
 def check_crc(data, polynomial):
+    """
+    Verifica a integridade do dado com base na `polynomial` e retorna os bits sem o CRC
+    e um booleano indicando a validade.
+    """
+    if len(data) < len(polynomial):
+        raise ValueError("Dados são menores que o polinômio CRC.")
+        
     remainder = crc_remainder(data, polynomial)
-    return remainder == '0' * (len(polynomial) - 1)
+    valid = remainder == '0' * (len(polynomial) - 1)
+    
+    # Retorna a string sem o CRC
+    if valid:
+        return data[:-len(remainder)], valid
+    else:
+        return None, valid
+
+def frame_data_crc(data, polynomial):
+    """
+    Ajusta os dados para incluir o CRC.
+    """
+    return generate_crc(data, polynomial)
+
+def unframe_data_crc(data, polynomial):
+    """
+    Remove o CRC dos dados ajustados e verifica a integridade.
+    """
+    data, valid_crc = check_crc(data, polynomial)
+    return data, valid_crc
 
 
 ########################## HAMMING #########################
