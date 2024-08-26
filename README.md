@@ -22,7 +22,7 @@ Para executar o trabalho, siga os passos:
     >> pip install -r requirements.txt
 
 6) Executar web app:
-    >> streamlit run main.py
+    >> streamlit run interface.py
 
 ## Funcionalidades
 
