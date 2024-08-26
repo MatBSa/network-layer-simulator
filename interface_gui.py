@@ -18,7 +18,7 @@ message = st.text_input("Digite a mensagem a ser transmitida:")
 line_code = st.selectbox("Escolha o tipo de codificação:", ["NRZ", "Manchester", "Bipolar"])
 
 # Seção Modulador
-modulacao = st.selectbox("Escolha o tipo de Modulação:", ("ASK", "FSK", "8-QAM"))
+modulacao = st.selectbox("Escolha o tipo de Modulação:", ["ASK", "FSK", "8-QAM"])
 
 # Botão para criar o sinal
 if st.button("Criar Sinal"):
@@ -38,21 +38,21 @@ if st.button("Criar Sinal"):
 
     # Aplicando a modulação
     if modulacao == "ASK":
-        modulated_signal = ask(binary_message_str)
+        modulated_signal = ask(coded_signal)
     elif modulacao == "FSK":
-        modulated_signal = fsk(binary_message_str)
+        modulated_signal = fsk(coded_signal)
     elif modulacao == "8QAM":
-        modulated_signal = qam8(binary_message_str)
+        modulated_signal = qam8(coded_signal)
 
     st.write(f"Sinal modulado ({modulacao})")
 
     # Plotando o gráfico do sinal modulado
     if modulacao == "8QAM":
         plot_signal_8qam(binary_message_str, modulated_signal, title=f"Sinal modulado - {modulacao}")
-    elif line_code == "Bipolar":
-        plot_signal_bip(binary_message_str, modulated_signal, title=f"Sinal modulado - {modulacao}")
-    else:
+    elif modulacao == "ASK":
         plot_signal(binary_message_str, modulated_signal, title=f"Sinal modulado - {modulacao}")
+    elif modulacao == "FSK":
+        plot_signal(binary_message_str, coded_signal, title=f"Sinal modulado - {modulacao}")
 
     # Exibindo a imagem gerada
     exibir_imagem("signal.png")

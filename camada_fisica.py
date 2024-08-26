@@ -45,7 +45,7 @@ def qam8(bit_array, carrier_frequency=10, sampling_rate=100):
 
 # Função para plotar o sinal 
 def plot_signal_8qam(data, signal, title='Signal', filename = 'signal.png'):
-    t = np.linspace(0, len(data), len(signal), endpoin=False)
+    t = np.linspace(0, len(data), len(signal), endpoint=False)
     plt.figure(figsize=(10,4))
     plt.plot(t,signal)
     plt.title(title)
@@ -100,12 +100,10 @@ def plot_signal_bip(data,signal, title="Signal", filename="signal.png"):
 bit_sequence = "10101001"
 bipolar_signal = bipolar_nrz(bit_sequence)
 
-plot_signal(bit_sequence, bipolar_signal, title="Bipolar NRZ Modulated Signal", filename="bipolar_nrz_signal.png")
+plot_signal_bip(bit_sequence, bipolar_signal, title="Bipolar NRZ Modulated Signal", filename="bipolar_nrz_signal.png")
 
 
 # 'transmitter' sends a text message that must be converted into a binary array of bits
-
-# 0) converts a string message to an array of bits 1/0 (based on ascii byte char representation)
 def binary_conversor(message):
     binary_message = []
     
@@ -117,17 +115,9 @@ def binary_conversor(message):
         
     return binary_message
 
-
-# 1) polar nrz digital modulation
-# 0 becomes -1 (-Voltage) while 1 stands as 1 (+Voltage)
 def polar_nrz(binary_message):
     return [1 if bit == 1 else -1 for bit in binary_message]
 
-
-# 2) manchester digital modulation
-# 2-bit signal representation
-# 0 -> (-1, 1)
-# 1 -> (1, -1)
 def manchester(binary_message):
     manchester_code = {0: [0, 1], 1: [1, 0]}
     
