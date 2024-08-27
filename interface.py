@@ -53,7 +53,7 @@ if st.button("Enviar mensagem"):
         plota_bits_codificados(bits_codificados, codificacao)
     
     # display na pagina
-    st.image('images/bits_codificados.png')
+    st.image('images/bits_codificados.png')    
     
     inicia_servidor()
         
@@ -63,13 +63,18 @@ if st.button("Enviar mensagem"):
                                                         enquadramento,
                                                         erro,
                                                         modulacao)
+    
+    # plota modulacao isoladamente (modulacao -> plot sinal)
+    plota_modulacoes(sinal, modulacao)
+    # display na pagina
+    st.image('images/modulacao.png')
 
     # receber mensagem do transmissor 
     msg_bruta, msg_rec_text, msg_rec_bits = receptor(codificacao, enquadramento, erro)
     
-    print(f'Sequencia de bits original: {msg_bruta}')
+    print(f'Sequencia de bits original recebida: {msg_bruta}')
     print(f'Mensagem-texto decodificada: {msg_rec_text}')
     print(f'Sequencia de bits decodificada: {msg_rec_bits}')
-    st.markdown(f'Sequencia de bits original: {msg_bruta}')
+    st.markdown(f'Sequencia de bits original recebida: {msg_bruta}')
     st.markdown(f'Mensagem-texto decodificada: {msg_rec_text}')
     st.markdown(f'Sequencia de bits decodificada: {msg_rec_bits}')

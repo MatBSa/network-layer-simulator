@@ -128,7 +128,7 @@ def get_char_count_frames_bits(binary_message):
 # obtain frames (without flags) and additional bits information
 # obtains a list containing the bits of each frame (concatenated in str, removing the flag delimiting each frame) and the additional bits
 def get_byte_insert_frames_bits(binary_message, flag='01111110'):
-    str_frames_without_flags, additional_bits, frame = list(), list()
+    str_frames_without_flags, additional_bits, frame = list(), list(), list()
     byte_units = [binary_message[i:i+8] for i in range(0, len(binary_message), 8)]
     bytes = [''.join(str(bit) for bit in byte) for byte in byte_units]
 
@@ -367,15 +367,16 @@ def checar_paridade(quadros, bits_adicionais):
 ########################### CRC-32 ###########################
 def quadros_com_crc_insercao_bytes(quadros):
     quadros_com_crc = list()
-    
     for quadro in quadros:
         flag_binary_lst, carga_util_binary_lst = forma_flag_carga_util_insercao_bytes(quadro)
-
+        
         quadro_crc, n_bits_adicionados = calcula_crc32(carga_util_binary_lst)
         n_bits_adicionados_binary = format(n_bits_adicionados, '08b')
         cabecalho_adicionado = [int(bit) for bit in n_bits_adicionados_binary]
         
         quadros_com_crc.append(flag_binary_lst + cabecalho_adicionado + quadro_crc + flag_binary_lst)
+        
+    return quadros_com_crc
 
 
 def quadros_com_crc_insercao_bits(quadros):
@@ -389,6 +390,8 @@ def quadros_com_crc_insercao_bits(quadros):
         cabecalho_adicionado = [int(bit) for bit in n_bits_adicionados_binary]
         
         quadros_com_crc.append(flag_binary_lst + cabecalho_adicionado + quadro_crc + flag_binary_lst)
+    
+    return quadros_com_crc
 
 
 def quadros_com_crc_contagem_char(quadros):
@@ -398,6 +401,8 @@ def quadros_com_crc_contagem_char(quadros):
         quadro_crc, n_bits_adicionados = calcula_crc32(carga_util_binary_lst)
     
     quadros_com_crc.append(forma_quadro_cabecalho_adicionados_contagem_char(quadro_crc, n_bits_adicionados))
+    
+    return quadros_com_crc
     
     
 def aplicar_crc_quadros(enquadramento, quadros):
@@ -623,14 +628,3 @@ def receive_hamming(binary_message_with_parity, additional_bits_list):
 
     # retorna a mensagem corrigida
     return binary_message_with_parity
-
-    
-if __name__ == '__main__':
-    #frames = ['101100110100001011001000', '100011110000111000011110', '111100011110001111000111']
-    #padding_bits_list = [0, 1, 0]
-    #bits_cleaned, detection_error = checar_crc32(frames, padding_bits_list)
-
-    #print(bits_cleaned)  
-    #print(detection_error)  
-    pass
-    

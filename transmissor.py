@@ -1,6 +1,7 @@
 import socket
 from camada_enlace import *
 from camada_fisica import *
+from plot_functions import *
 import streamlit as st
 import pickle
 
@@ -46,7 +47,7 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
     elif erro == 'crc32':
         quadros_pos_erro = aplicar_crc_quadros(enquadramento, quadros)
     elif erro == 'hamming':
-        quadros_pos_erro = hamming(quadros)
+        st.markdown('Hamming ainda não disponibilizado')
     else:
         print('Nenhum método de detecção/correção de erros  escolhido')
         st.markdown('Nenhum método de detecção/correção de erros escolhido')
@@ -55,6 +56,7 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
 
     # mensagem binaria unica
     final_binary_msg = [bit for quadro in quadros_pos_erro for bit in quadro]    
+    print(f'Final binary msg: {final_binary_msg}')
     
     # modulacao
     if modulacao == 'ask':
@@ -62,7 +64,7 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
     elif modulacao == 'fsk':
         sinal = fsk(1, 2, 1, final_binary_msg)
     elif modulacao == '8qam':
-        sinal = qam8(final_binary_msg)
+        sinal = modulacao_8qam(final_binary_msg)
     else:
         print('Nenhum método de modulação escolhido')
         st.markdown('Nenhum método de modulação escolhido')
@@ -71,11 +73,9 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
     final_binary_msg_str = ''.join(map(str, final_binary_msg))
     
     # enviar para o receptor a msg
+    print(f'Mensagem final transmitida: {final_binary_msg_str}')
     transmitir_dados(final_binary_msg_str)
-    
-    st.markdown(f'MSG ENVIADA: {final_binary_msg_str}')
-    print(f'MSG ENVIADA: {final_binary_msg_str}')
-    
+        
     return binary_message, bits_codificados, sinal
 
 
@@ -88,3 +88,16 @@ def transmitir_dados(dados):
         client_socket.close()
 
         return dados_recebidos
+
+
+if __name__ == '__main__':
+    # transmitindo a mesma mensagem
+    result = transmissor('oi', 'manchester', 'insercao de bits', 'crc32', 'fsk')
+    
+    print('-'*100)
+    print(''.join([str(x) for x in result[0]]), 'binary message')
+    print()
+    print(''.join([str(x) for x in result[1]]), 'bits codificados')
+    print()
+    #print(''.join([str(x) for x in result[2]]), 'sinal')
+    

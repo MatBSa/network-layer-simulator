@@ -39,6 +39,8 @@ def inicia_servidor():
 def receptor(codificacao, enquadramento, erro):
     global binary_message
     
+    print(f'\n\nReceptor...')
+    
     # enquadramento
     if enquadramento == 'contagem de caracteres':
         quadros, bits_adicionais = get_char_count_frames_bits(binary_message)
@@ -48,7 +50,9 @@ def receptor(codificacao, enquadramento, erro):
         if erro != 'crc32':
             quadros, bits_adicionais = get_bit_insert_frames_bits(binary_message, crc=False)
         else:
-            quadros, bits_adicionais = get_char_count_frames_bits(binary_message)
+            quadros, bits_adicionais = get_bit_insert_frames_bits(binary_message)
+    
+    print(f'1. desenquadramento: {quadros, bits_adicionais}')
     
     # deteccao e correcao de erros
     if erro == 'paridade':
@@ -56,20 +60,18 @@ def receptor(codificacao, enquadramento, erro):
     elif erro == 'crc32':
         bits_10, erros = checar_crc32(quadros, bits_adicionais)
     elif erro == 'hamming':
-        bits_10, erros = receive_hamming(quadros, bits_adicionais)
+        st.markdown('Hamming ainda não disponibilizado')
+        
+    print(f'2. Erros: {bits_10, erros}')
         
     # codificacao
     if codificacao == 'manchester':
-        tmp = []
-        for i in range(0, len(bits_10), 2):
-            if bits_10[i] == 0 and bits_10[i+1] == 1:
-                tmp = [0] + tmp
-            elif bits_10[i] == 1 and bits_10[i+1] == 0:
-                tmp = [1] + tmp
-        bits_10 = tmp
+        bits_2_a_2 = [bits_10[i:i+2] for i in range(0, len(bits_10), 2)]
+        bits_10 = [0 if bits == [0, 1] else 1 for bits in bits_2_a_2]
+    
+    print(f'3. bits decodificados: {bits_10} e msg final a ser convert a texto')
     
     # erros
-    
     mensagem_recebida = text_conversor(bits_10)
     
     return binary_message, mensagem_recebida, ''.join(map(str, bits_10))
