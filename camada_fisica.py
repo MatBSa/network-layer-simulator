@@ -90,7 +90,7 @@ def fsk(carrier_freq_0, carrier_freq_1, amplitude, binary_message, sampling_rate
                     modulated_signal[i* sampling_rate + k] = amplitude * np.sin(2 * np.pi * carrier_freq_1 * k / sampling_rate)
 
         return modulated_signal
-    
+     
     
 ######################### 8QAM #########################
 def modulacao_8qam(bits):

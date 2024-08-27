@@ -5,6 +5,7 @@
 Este projeto é um simulador das camadas de enlace e física de redes, implementado em Python. Ele simula protocolos de modulação digital e por portadora, além de enquadramento, detecção e correção de erros. Este trabalho é para aplicação prática das teorias aprendidas na disciplina de Teleinformática e Redes 1 da Universidade de Brasília - UnB.
 
 Para executar o trabalho, siga os passos:
+OBS: A versão do python utilizada é a 3.11.5
 
 1) Clonar repositório: 
     >> git clone https://github.com/MatBSa/network-layer-simulator.git
