@@ -25,6 +25,8 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
         print('Nenhum método de codificação escolhido')
         st.markdown('Nenhum método de codificação escolhido')
     
+    print(f"1. codificacao: {bits_10}")
+    
     # enquadramento
     if enquadramento == 'contagem de caracteres':
         quadros = char_count(8, bits_10)
@@ -36,44 +38,45 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
         print('Nenhum método de enquadramento escolhido')
         st.markdown('Nenhum método de enquadramento escolhido')
         
+    print(f"2. enquadramento: {quadros}")
+    
     # deteccao e correcao de erros
     if erro == 'paridade':
-        quadros_pos_erro = generate_parity(quadros)
+        quadros_pos_erro = aplicar_paridade_quadros(enquadramento, quadros)
     elif erro == 'crc32':
-        quadros_pos_erro = generate_crc(quadros)
+        quadros_pos_erro = aplicar_crc_quadros(enquadramento, quadros)
     elif erro == 'hamming':
         quadros_pos_erro = hamming(quadros)
     else:
         print('Nenhum método de detecção/correção de erros  escolhido')
         st.markdown('Nenhum método de detecção/correção de erros escolhido')
+        
+    print(f"3. erros: {quadros_pos_erro}")
 
-    #NOTE quadros_pos_erro momentaneo -> testar recebimento correto de 'ZZZ' no receptor. Aqui vamos mandar zzz em binario
-    sinal = binary_message
-
-    # 'quadros' e uma lista de quadros
     # mensagem binaria unica
-    #final_binary_msg = [bit for quadro in quadros_pos_erro for bit in quadro]    
-    final_binary_msg = []
+    final_binary_msg = [bit for quadro in quadros_pos_erro for bit in quadro]    
     
     # modulacao
     if modulacao == 'ask':
-        sinal = ask(final_binary_msg)
+        sinal = ask(1, 1, final_binary_msg)
     elif modulacao == 'fsk':
-        sinal = fsk(final_binary_msg)
+        sinal = fsk(1, 2, 1, final_binary_msg)
     elif modulacao == '8qam':
         sinal = qam8(final_binary_msg)
     else:
         print('Nenhum método de modulação escolhido')
         st.markdown('Nenhum método de modulação escolhido')
 
-    print(sinal, 'ZZZ em binario')
-    st.markdown(f'ZZZ em binario SINAL ENVIADO: {sinal}')
+    # mensagem binaria unica str
+    final_binary_msg_str = ''.join(map(str, final_binary_msg))
     
-    # enviar para o receptor apenas o sinal
-    transmitir_dados(sinal)
+    # enviar para o receptor a msg
+    transmitir_dados(final_binary_msg_str)
     
-    #return binary_message, bits_codificados, sinal
-    return sinal
+    st.markdown(f'MSG ENVIADA: {final_binary_msg_str}')
+    print(f'MSG ENVIADA: {final_binary_msg_str}')
+    
+    return binary_message, bits_codificados, sinal
 
 
 def transmitir_dados(dados):
@@ -81,7 +84,7 @@ def transmitir_dados(dados):
         client_socket.connect(('127.0.0.1', 65432))
         dados = pickle.dumps(dados)
         client_socket.send(dados)
-        dados_recebidos = client_socket.recv(4096)
+        dados_recebidos = client_socket.recv(8192)
         client_socket.close()
 
         return dados_recebidos

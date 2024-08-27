@@ -180,30 +180,363 @@ def get_bit_insert_frames_bits(binary_message, flag='01111110', crc=True):
     return str_frames_without_flags, additional_bits
     
 ######################### Parity Bit #########################
-def generate_parity(data):
-    return data + str(data.count('1') % 2)
+quadros = [['01111110', '01011010', '01111110'], ['01111110', '01011010', '01111110'], ['01111110', '01011010', '01111110']]
 
-def check_parity(data):
-    return data[:-1], data[-1] == str(data[:-1].count('1') % 2)
+def bits_a_adicionar_quadro_div_8(carga_util_c_paridade):
+    # garantir que os quadros tenham um tamanho divisivel por 8 -> bits adicionais para completar numero divisivel por 8
+    bits_a_adicionar = (8 - (len(carga_util_c_paridade) % 8)) % 8           # 1. calcula quantos bits necessarios adicionar p o quadro ser divisivel por 8 (8 - (len(carga_util_c_paridade) % 8)) 
+                                                                            # 2. verifica se o numero necessario para adicionar eh 0 ou 8, nao sendo necessario
+    bits_a_adicionar_binario = format(bits_a_adicionar, '08b')
+    quadro_adicionado = carga_util_c_paridade + [0] * bits_a_adicionar
+    
+    return quadro_adicionado, bits_a_adicionar_binario
+
+
+def forma_carga_util_contagem_char(quadro):
+    carga_util = quadro[1:]
+    carga_util_joined = ''.join(carga_util)
+    carga_util_binary_lst = [int(bit) for bit in carga_util_joined]    
+    return carga_util_binary_lst
+
+
+def forma_quadro_cabecalho_adicionados_contagem_char(quadro_crc, n_bits_adicionados):
+    n_bits_adicionados_binary = format(n_bits_adicionados, '08b')
+    cabecalho_adicionado = [int(bit) for bit in n_bits_adicionados_binary]
+    
+    tamanho_do_quadro = len(quadro_crc) // 8
+    tamanho_do_quadro_binario = format(tamanho_do_quadro + 2, '08b')
+    cabecalho_do_quadro_binary_lst = [int(bit) for bit in tamanho_do_quadro_binario]
+    
+    return cabecalho_do_quadro_binary_lst + cabecalho_adicionado + quadro_crc
+
+
+def forma_flag_carga_util_insercao_bytes(quadro):
+    flag = quadro[0]
+    flag_binary_lst = [int(bit) for bit in flag]  
+    carga_util = quadro[1:-1]
+    carga_util_joined = ''.join(carga_util)
+    carga_util_binary_lst = [int(bit) for bit in carga_util_joined]
+    return flag_binary_lst, carga_util_binary_lst
+
+
+def forma_flag_carga_util_insercao_bits(quadro):
+    flag = quadro[:8]
+    flag_binary_lst = [int(bit) for bit in flag]
+    carga_util = quadro[8:-8]
+    carga_util_joined = ''.join(carga_util)
+    carga_util_binary_lst = [int(bit) for bit in carga_util_joined]
+    return flag_binary_lst, carga_util_binary_lst
+
+
+def quadros_com_paridade_insercao_bytes(quadros):
+    quadros_com_paridade = list()
+        
+    # cada quadro e uma lista de bytes em str
+    for quadro in quadros:
+        flag_binary_lst, carga_util_binary_lst = forma_flag_carga_util_insercao_bytes(quadro)
+        carga_util_c_paridade = generate_parity(carga_util_binary_lst)
+            
+        quadro_adicionado, bits_a_adicionar_binario = bits_a_adicionar_quadro_div_8(carga_util_c_paridade)
+        cabecalho_adicionado = [int(bit) for bit in bits_a_adicionar_binario]
+    
+        quadros_com_paridade.append(flag_binary_lst + cabecalho_adicionado + quadro_adicionado + flag_binary_lst)
+        
+    return quadros_com_paridade
+
+
+def quadros_com_paridade_insercao_bits(quadros):
+    quadros_com_paridade = list()
+    
+    for quadro in quadros:
+        flag_binary_lst, carga_util_binary_lst = forma_flag_carga_util_insercao_bits(quadro)
+        carga_util_c_paridade = generate_parity(carga_util_binary_lst)
+        quadros_com_paridade.append(flag_binary_lst + carga_util_c_paridade + flag_binary_lst)
+
+    return quadros_com_paridade
+
+
+def quadros_com_paridade_contagem_char(quadros):        
+    quadros_com_paridade = list()
+    
+    for quadro in quadros:
+        carga_util_binary_lst = forma_carga_util_contagem_char(quadro)
+        carga_util_c_paridade = generate_parity(carga_util_binary_lst)
+        
+        quadro_adicionado, bits_a_adicionar_binario = bits_a_adicionar_quadro_div_8(carga_util_c_paridade)
+        cabecalho_adicionado = [int(bit) for bit in bits_a_adicionar_binario]
+        
+        tamanho_do_quadro = len(quadro_adicionado) // 8
+        tamanho_do_quadro_binario = format(tamanho_do_quadro + 2, '08b')
+        cabecalho_do_quadro_binary_lst = [int(bit) for bit in tamanho_do_quadro_binario]
+        
+        quadros_com_paridade.append(cabecalho_do_quadro_binary_lst + cabecalho_adicionado + quadro_adicionado)
+    
+    return quadros_com_paridade
+        
+
+def aplicar_paridade_quadros(enquadramento, quadros):
+    if enquadramento == 'insercao de bytes':
+        return quadros_com_paridade_insercao_bytes(quadros)
+            
+    elif enquadramento == 'insercao de bits':
+        return quadros_com_paridade_insercao_bits(quadros)
+    
+    elif enquadramento == 'contagem de caracteres':
+        return quadros_com_paridade_contagem_char(quadros)
+
+
+    
+def generate_parity(data):
+    data = ''.join([str(bit) for bit in data])
+    data_w_parity = data + str(data.count('1') % 2)
+    return [int(bit) for bit in data_w_parity]
+
+
+def checar_paridade(quadros, bits_adicionais):
+    erros, bits_quadro_carga_util = list(), list()
+
+    if bits_adicionais:
+        indice_quadro = 0
+        while indice_quadro < len(quadros):
+            quadro = quadros[indice_quadro]
+            bit_adicional = bits_adicionais[indice_quadro]
+
+            if bit_adicional != 0:
+                quadro = quadro[:-bit_adicional] 
+
+            quadro_binary_bits_lst = []
+            indice_bit = 0
+            while indice_bit < len(quadro):
+                quadro_binary_bits_lst.append(int(quadro[indice_bit]))
+                indice_bit += 1
+
+            numero_1s = 0
+            indice_soma = 0
+            while indice_soma < len(quadro_binary_bits_lst) - 1:
+                numero_1s += quadro_binary_bits_lst[indice_soma]
+                indice_soma += 1
+
+            bit_paridade = quadro_binary_bits_lst[-1]
+
+            if (numero_1s + bit_paridade) % 2 == 0:
+                erros.append(False)
+            else:
+                erros.append(True)
+
+            indice_copia = 0
+            while indice_copia < len(quadro_binary_bits_lst) - 1:
+                bits_quadro_carga_util.append(quadro_binary_bits_lst[indice_copia])
+                indice_copia += 1
+
+            indice_quadro += 1
+
+    else:
+        indice_quadro = 0
+        while indice_quadro < len(quadros):
+            quadro = quadros[indice_quadro]
+            
+            quadro_binary_bits_lst = []
+            indice_bit = 0
+            while indice_bit < len(quadro):
+                quadro_binary_bits_lst.append(int(quadro[indice_bit]))
+                indice_bit += 1
+
+            numero_1s = 0
+            indice_soma = 0
+            while indice_soma < len(quadro_binary_bits_lst) - 1:
+                numero_1s += quadro_binary_bits_lst[indice_soma]
+                indice_soma += 1
+
+            bit_paridade = quadro_binary_bits_lst[-1]
+
+            if (numero_1s + bit_paridade) % 2 == 0:
+                erros.append(False)
+            else:
+                erros.append(True)
+
+            indice_copia = 0
+            while indice_copia < len(quadro_binary_bits_lst) - 1:
+                bits_quadro_carga_util.append(quadro_binary_bits_lst[indice_copia])
+                indice_copia += 1
+
+            indice_quadro += 1
+
+    return bits_quadro_carga_util, erros
+
 
 ########################### CRC-32 ###########################
-def crc_remainder(data, polynomial):
-    data = data + '0' * (len(polynomial) - 1)
-    data = list(data)
-    polynomial = list(polynomial)
-    for i in range(len(data) - len(polynomial) + 1):
-        if data[i] == '1':
-            for j in range(len(polynomial)):
-                data[i + j] = str(int(data[i + j]) ^ int(polynomial[j]))
-    return ''.join(data[-(len(polynomial) - 1):])
+def quadros_com_crc_insercao_bytes(quadros):
+    quadros_com_crc = list()
+    
+    for quadro in quadros:
+        flag_binary_lst, carga_util_binary_lst = forma_flag_carga_util_insercao_bytes(quadro)
 
-def generate_crc(data, polynomial):
-    remainder = crc_remainder(data, polynomial)
-    return data + remainder
+        quadro_crc, n_bits_adicionados = calcula_crc32(carga_util_binary_lst)
+        n_bits_adicionados_binary = format(n_bits_adicionados, '08b')
+        cabecalho_adicionado = [int(bit) for bit in n_bits_adicionados_binary]
+        
+        quadros_com_crc.append(flag_binary_lst + cabecalho_adicionado + quadro_crc + flag_binary_lst)
 
-def check_crc(data, polynomial):
-    remainder = crc_remainder(data, polynomial)
-    return remainder == '0' * (len(polynomial) - 1)
+
+def quadros_com_crc_insercao_bits(quadros):
+    quadros_com_crc = list()
+    
+    for quadro in quadros:
+        flag_binary_lst, carga_util_binary_lst = forma_flag_carga_util_insercao_bits(quadro)
+
+        quadro_crc, n_bits_adicionados = calcula_crc32(carga_util_binary_lst)
+        n_bits_adicionados_binary = format(n_bits_adicionados, '08b')
+        cabecalho_adicionado = [int(bit) for bit in n_bits_adicionados_binary]
+        
+        quadros_com_crc.append(flag_binary_lst + cabecalho_adicionado + quadro_crc + flag_binary_lst)
+
+
+def quadros_com_crc_contagem_char(quadros):
+    quadros_com_crc = list()
+    for quadro in quadros:
+        carga_util_binary_lst = forma_carga_util_contagem_char(quadro)
+        quadro_crc, n_bits_adicionados = calcula_crc32(carga_util_binary_lst)
+    
+    quadros_com_crc.append(forma_quadro_cabecalho_adicionados_contagem_char(quadro_crc, n_bits_adicionados))
+    
+    
+def aplicar_crc_quadros(enquadramento, quadros):
+    if enquadramento == 'insercao de bytes':
+        return quadros_com_crc_insercao_bytes(quadros)
+
+    elif enquadramento == 'insercao de bits':
+        return quadros_com_crc_insercao_bits(quadros)
+
+    elif enquadramento == 'contagem de caracteres':
+        return quadros_com_crc_contagem_char(quadros)
+    
+
+def calcula_crc32(binary_message, polinomio=format(0x104C11DB7, '033b')):
+    tamanho_bits_adicionados = 0
+
+    if len(binary_message) < 64:  # se o array de bits tiver menos de 64 bits, completar com 0's e 1's (para evitar sequências longas de 0's)
+        array_bits_complementares = []
+        indice_complementar = 0
+        while indice_complementar < (64 - len(binary_message)):
+            if indice_complementar % 2 == 0:  # se o índice for par, o bit é 0
+                array_bits_complementares.append(0)
+            else:  # se o índice for ímpar, o bit é 1
+                array_bits_complementares.append(1)
+            indice_complementar += 1
+        binary_message = binary_message + array_bits_complementares
+        tamanho_bits_adicionados = len(array_bits_complementares)
+
+    binary_message_joined = ''.join(map(str, binary_message))  # converter o array de bits para uma string de bits
+    binary_message_original = binary_message_joined
+
+    binary_message_joined += '0' * 32  # adicionar 32 zeros para completar os 96 bits
+    resultado_xor_str = ''
+    indice_bit = 0
+    while indice_bit < len(binary_message_joined):  # para cada bit na string de bits
+        if indice_bit <= 32:  # se o bit estiver nos primeiros 32 bits
+            resultado_xor_str += binary_message_joined[indice_bit]
+        else:  # se o bit estiver nos últimos 64 bits
+            if resultado_xor_str[0] == '1':
+                resultado_xor_temp = ''
+                indice_temp = 0
+                while indice_temp < len(polinomio):
+                    if resultado_xor_str[indice_temp] == polinomio[indice_temp]:
+                        resultado_xor_temp += '0'
+                    else:
+                        resultado_xor_temp += '1'
+                    indice_temp += 1
+                resultado_xor_str = resultado_xor_temp[1:] + binary_message_joined[indice_bit]  # excluir o primeiro bit (0) e incluir o próximo bit
+            else:
+                resultado_xor_str = resultado_xor_str[1:] + binary_message_joined[indice_bit]  # excluir o primeiro bit (0) e incluir o próximo bit
+
+        if indice_bit == len(binary_message_joined) - 1:  # se for o último bit
+            if resultado_xor_str[0] == '1':  # se o primeiro bit for 1, xor com o polinômio
+                resultado_xor_temp = ''
+                indice_temp = 0
+                while indice_temp < len(polinomio):
+                    if resultado_xor_str[indice_temp] == polinomio[indice_temp]:
+                        resultado_xor_temp += '0'
+                    else:
+                        resultado_xor_temp += '1'
+                    indice_temp += 1
+                resultado_xor_str = resultado_xor_temp[1:]  # excluir o primeiro bit (0)
+            else:  # se o primeiro bit for 0, xor com 33 zeros
+                resultado_xor_str = resultado_xor_str[1:]  # excluir o primeiro bit (0)
+        indice_bit += 1
+
+    return list(binary_message_original + resultado_xor_str), tamanho_bits_adicionados
+
+
+def checar_crc32(quadros, bits_adicionais, polinomio=format(0x104C11DB7, '033b')):
+    erros, bits_quadro_carga_util = list(), list()
+
+    for indice_quadro in range(len(quadros)):
+        quadro = quadros[indice_quadro]
+        bits_padding = bits_adicionais[indice_quadro]
+
+        quadro_binary_bits_lst = []
+        indice_bit = 0
+        while indice_bit < len(quadro):
+            quadro_binary_bits_lst.append(int(quadro[indice_bit]))
+            indice_bit += 1
+
+        tamanho_bits_adicionados = 0
+
+        string_bits = ''.join(map(str, quadro_binary_bits_lst))  # converte o array de bits para uma string de bits
+        string_bits += '0' * 32  # adiciona 32 zeros para completar os 96 bits
+        resultado_xor_str = ''
+        indice_bit_str = 0
+
+        while indice_bit_str < len(string_bits):  # para cada bit na string de bits
+            if indice_bit_str <= 32:  # se o bit estiver nos primeiros 32 bits
+                resultado_xor_str += string_bits[indice_bit_str]
+            else:  # se o bit estiver nos últimos 64 bits
+                if resultado_xor_str[0] == '1':
+                    resultado_xor_temp = ''
+                    indice_temp = 0
+                    while indice_temp < len(polinomio):
+                        if resultado_xor_str[indice_temp] == polinomio[indice_temp]:
+                            resultado_xor_temp += '0'
+                        else:
+                            resultado_xor_temp += '1'
+                        indice_temp += 1
+                    resultado_xor_str = resultado_xor_temp[1:] + string_bits[indice_bit_str]  # exclui o primeiro bit (0) e inclui o próximo bit
+                else:
+                    resultado_xor_str = resultado_xor_str[1:] + string_bits[indice_bit_str]  # exclui o primeiro bit (0) e inclui o próximo bit
+
+            if indice_bit_str == len(string_bits) - 1:  # se for o último bit
+                if resultado_xor_str[0] == '1':  # se o primeiro bit for 1, xor com o polinômio
+                    resultado_xor_temp = ''
+                    indice_temp = 0
+                    while indice_temp < len(polinomio):
+                        if resultado_xor_str[indice_temp] == polinomio[indice_temp]:
+                            resultado_xor_temp += '0'
+                        else:
+                            resultado_xor_temp += '1'
+                        indice_temp += 1
+                    resultado_xor_str = resultado_xor_temp[1:]  # exclui o primeiro bit (0)
+                else:  # se o primeiro bit for 0, xor com 33 zeros
+                    resultado_xor_str = resultado_xor_str[1:]  # exclui o primeiro bit (0)
+            indice_bit_str += 1
+
+        if resultado_xor_str == '0' * 32:  # se o resultado for 32 zeros, não há erros
+            erros.append(False)
+        else:  # se o resultado não for 32 zeros, há erros
+            erros.append(True)
+
+        if bits_padding != 0:
+            indice_limpeza = 0
+            while indice_limpeza < len(quadro_binary_bits_lst) - bits_padding - 32:  # remove os bits de padding
+                bits_quadro_carga_util.append(quadro_binary_bits_lst[indice_limpeza])
+                indice_limpeza += 1
+        else:
+            indice_limpeza = 0
+            while indice_limpeza < len(quadro_binary_bits_lst) - 32:  # remove os 32 bits do CRC
+                bits_quadro_carga_util.append(quadro_binary_bits_lst[indice_limpeza])
+                indice_limpeza += 1
+
+    return bits_quadro_carga_util, erros
+
 
 
 ########################## HAMMING #########################
@@ -293,11 +626,11 @@ def receive_hamming(binary_message_with_parity, additional_bits_list):
 
     
 if __name__ == '__main__':
-    from camada_fisica import *
-    
-    # a=1, f1=1, f2=2
-    message_mod = 'Olá'
-    binary_message = binary_conversor(message_mod)
-    nrz_mod = polar_nrz(binary_message)
-    
+    #frames = ['101100110100001011001000', '100011110000111000011110', '111100011110001111000111']
+    #padding_bits_list = [0, 1, 0]
+    #bits_cleaned, detection_error = checar_crc32(frames, padding_bits_list)
+
+    #print(bits_cleaned)  
+    #print(detection_error)  
+    pass
     

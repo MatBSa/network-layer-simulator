@@ -7,7 +7,6 @@ import numpy as np
 def plota_bits_codificados(bits_codificados, codificacao):
     # considera amplitudes de sinal +1/-1 para plotar, de digital 0/1 para sinal -v/v -> melhor de ler/representacao de simbolo eletrico
     simbolo = [1 if bit == 1 else 0 if bit == 0 else -1 for bit in bits_codificados]
-    print(f'Sinal plotado: {simbolo}')
     
     # steps/degraus com eixo com n faixas tanto quanto n bits que temos
     plt.figure(figsize=(20, 12))
