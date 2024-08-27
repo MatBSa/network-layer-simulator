@@ -1,106 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def qam8(bit_array, carrier_frequency=10, sampling_rate=100):
-    """
-    Implementação da modulação 8QAM.
-    
-    Args:
-    bit_array (str): Sequência de bits a serem modulados. Deve ter um comprimento múltiplo de 3.
-    carrier_frequency (int): Frequência da portadora em Hz.
-    sampling_rate (int): Taxa de amostragem em Hz.
-    
-    Returns:
-    np.array: Sinal modulado.
-    """
-    if len(bit_array) % 3 != 0:
-        raise ValueError("O comprimento da sequência de bits deve ser múltiplo de 3")
-    
-    #Mapeamento de bits para simbolos 8QAM (I + jQ): onde I é a componente em fase e Q é a componente em quadratura
-    bit_to_symbol = { 
-        '000':(1 + 1j),
-        '001':(1 - 1j),
-        '010':(-1 + 1j),
-        '011':(-1 - 1j),
-        '100':(1 + 3j),
-        '101':(1 - 3j),
-        '110':(-1 + 3j),
-        '111':(-1 - 3j)
-    }
-    t = np.linspace(0, len(bit_array)//3, len(bit_array) // 3 * sampling_rate,endpoint=False)
-    carrier_cos = np.cos(2 * np.pi * carrier_frequency * t) # onda cossenoidal que representa a portadora para a compenente em fase 'I'
-    carrier_sin = np.sin(2 * np.pi * carrier_frequency * t) # onda senoidal que representa a portadora para a componente em quadratura 'Q'
-    modulated_signal = np.zeros(len(t))
 
-    for i in range(0, len(bit_array), 3):
-        bits = bit_array[i:i+3]
-        symbol = bit_to_symbol[bits]
+# bipolar nrz
+def bipolar_nrz(binary_message):
+    bipolar_nrz_msg = binary_message.copy()
+    signal = False
+    index = 0
+    while index < len(bipolar_nrz_msg):
+        current_bit = bipolar_nrz_msg[index]
+        if current_bit == 1:
+            if not signal:
+                bipolar_nrz_msg[index] = 1
+            else:
+                bipolar_nrz_msg[index] = -1
+            signal = not signal
+        index += 1
+    return bipolar_nrz_msg
 
-        I = symbol.real
-        Q = symbol.imag
-
-        modulated_signal[i//3*sampling_rate:(i//3+1)*sampling_rate] = I * carrier_cos[i//3*sampling_rate:(i//3+1) *sampling_rate] + Q * carrier_sin[i // 3 * sampling_rate:(i//3+1) * sampling_rate]
-
-    return modulated_signal
-
-# Função para plotar o sinal 
-def plot_signal_8qam(data, signal, title='Signal', filename = 'signal.png'):
-    t = np.linspace(0, len(data), len(signal), endpoint=False)
-    plt.figure(figsize=(10,4))
-    plt.plot(t,signal)
-    plt.title(title)
-    plt.xlabel('Time')
-    plt.ylabel('Amplitude')
-    plt.grid(True)
-    plt.savefig(filename)
-    plt.close()
-
-#Exemplo de uso 8QAM
-bit_sequence = "110001101"
-qam8_signal = qam8(bit_sequence)
-plot_signal_8qam(bit_sequence, qam8_signal, title="8QAM Modulated Signal", filename="qam8_signal.png")
-
-
-# Implementação da parte de Bipolar
-def bipolar_nrz(bit_array, amplitude = 1, sampling_rate=100):
-    """
-    Implementação da modulação Bipolar NRZ 
-
-    Args:
-    bit_array(str): Sequencia de bits a serem modulados. (0 a 1)
-    amplitude(float): Amplitude do sinal modulado. (define os niveis de tensao usados para rep os bits)
-    sampling_rate(int): Taxa de amostragem em Hz.
-
-    Return:
-    np.array: Sinal modulado.
-    """
-    t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint = False)
-    modulated_signal = np.zeros(len(t)) # cria um tempo de 0 ate o comp da seq de bits, pontos mostrados c a'sampling.rate'
-
-    for i, bit in enumerate(bit_array):
-        if bit == '1': # valor positivo da amplitude
-            modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = amplitude
-        else: #bit == '0', recebe valor negativo de amplitude
-            modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = -amplitude
-    return modulated_signal
-
-# Função para plotar o sinal bipolar
-def plot_signal_bip(data,signal, title="Signal", filename="signal.png"):
-    t = np.linspace(0, len(data), len(signal), endpoint=False)
-    plt.figure(figsize=(10, 4))
-    plt.plot(t, signal)
-    plt.title(title)
-    plt.xlabel('Time')
-    plt.ylabel('Amplitude')
-    plt.grid(True)
-    plt.savefig(filename)
-    plt.close()
-
-# Exemplo de uso
-bit_sequence = "10101001"
-bipolar_signal = bipolar_nrz(bit_sequence)
-
-#plot_signal(bit_sequence, bipolar_signal, title="Bipolar NRZ Modulated Signal", filename="bipolar_nrz_signal.png")
 
 
 # 'transmitter' sends a text message that must be converted into a binary array of bits
@@ -108,10 +25,9 @@ bipolar_signal = bipolar_nrz(bit_sequence)
 # 0) converts a string message to an array of bits 1/0 (based on ascii byte char representation)
 def binary_conversor(message):
     binary_message = []
-    
-    for char in message:                    # each char
-        ascii = ord(char)                   # ascii decimal repr
-        byte = format(ascii, '08b')         # ascii dec -> binary (byte) repr
+    message = message.encode('utf8')
+    for char in message:                    # each char (ascii decimal)
+        byte = format(char, '08b')          # ascii dec -> binary (byte) repr
         bit_list = [int(bit) for bit in byte]  
         binary_message.extend(bit_list)     # put all in a single list
         
@@ -121,7 +37,7 @@ def binary_conversor(message):
 # 1) polar nrz digital modulation
 # 0 becomes -1 (-Voltage) while 1 stands as 1 (+Voltage)
 def polar_nrz(binary_message):
-    return [1 if bit == 1 else -1 for bit in binary_message]
+    return [bit if bit == 1 else -1 for bit in binary_message]
 
 
 # 2) manchester digital modulation
@@ -147,40 +63,69 @@ def text_conversor(binary_message):
 
 
 ######################### Amplitude Shift Keying (ASK) #########################
-def ask(bit_array, carrier_frequency=10, sampling_rate=100, amplitude_1=1, amplitude_0=0.5):
-    t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint=False)
-    carrier = np.sin(2 * np.pi * carrier_frequency * t)
-    modulated_signal = np.zeros(len(t))
-    
-    for i, bit in enumerate(bit_array):
-        if bit == '1':
-            modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = amplitude_1 * carrier[i * sampling_rate:(i + 1) * sampling_rate]
+def ask(carrier_freq, amplitude, binary_message, sampling_rate=100):  
+    modulated_signal = np.zeros(len(binary_message) * sampling_rate, dtype=float)
+
+    for i, bit in enumerate(binary_message):
+        if bit == 1:
+            for k in range(sampling_rate):
+                modulated_signal[i * sampling_rate + k] = amplitude * np.sin(2 * np.pi * carrier_freq * k / sampling_rate)
         else:
-            modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = amplitude_0 * carrier[i * sampling_rate:(i + 1) * sampling_rate]
-    
+            for k in range(sampling_rate):
+                modulated_signal[i * sampling_rate + k] = 0
+
     return modulated_signal
+
 
 ######################### Frequency Shift Keying (FSK) #########################
-def fsk(bit_array, carrier_frequency_0=10, carrier_frequency_1=20, sampling_rate=100):
-    t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint=False)
-    modulated_signal = np.zeros(len(t))
-    
-    for i, bit in enumerate(bit_array):
-        if bit == '1':
-            carrier = np.sin(2 * np.pi * carrier_frequency_1 * t[i * sampling_rate:(i + 1) * sampling_rate])
-        else:
-            carrier = np.sin(2 * np.pi * carrier_frequency_0 * t[i * sampling_rate:(i + 1) * sampling_rate])
-        modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = carrier
-    
-    return modulated_signal
+def fsk(carrier_freq_0, carrier_freq_1, amplitude, binary_message, sampling_rate=100):
+        modulated_signal = np.zeros(len(binary_message) * sampling_rate, dtype=float)
 
-def plot_signal(data, signal, title="Signal", filename="signal.png"):
-    t = np.linspace(0, len(data), len(signal), endpoint=False)
-    plt.figure(figsize=(10, 4))
-    plt.plot(t, signal)
-    plt.title(title)
-    plt.xlabel('Time')
-    plt.ylabel('Amplitude')
-    plt.grid(True)
-    plt.savefig(filename)
-    plt.close()
+        for i, bit in enumerate(binary_message):
+            if bit == 1:
+                for k in range(sampling_rate):
+                    modulated_signal[i * sampling_rate + k] = amplitude * np.sin(2 * np.pi * carrier_freq_0 * k / sampling_rate)
+            else:
+                for k in range(sampling_rate):
+                    modulated_signal[i* sampling_rate + k] = amplitude * np.sin(2 * np.pi * carrier_freq_1 * k / sampling_rate)
+
+        return modulated_signal
+    
+    
+######################### 8QAM #########################
+def modulacao_8qam(bits):
+    while len(bits) % 3 != 0:
+        bits.append(0)
+
+    simbolos_bits = [tuple(bits[i:i + 3]) for i in range(0, len(bits), 3)]
+
+    # Mapeamento para a constelação 8QAM
+    constelacao = {
+        (0, 0, 0): complex(-1, -1),
+        (0, 0, 1): complex(-1, 1),
+        (0, 1, 0): complex(1, -1),
+        (0, 1, 1): complex(1, 1),
+        (1, 0, 0): complex(-1, -3),
+        (1, 0, 1): complex(-1, 3),
+        (1, 1, 0): complex(1, -3),
+        (1, 1, 1): complex(1, 3)
+    }
+
+    sinais_modulados = [constelacao[simbolo] for simbolo in simbolos_bits]
+    duracao_sinal = 1 / 8
+
+    quantidade_simbolos = len(sinais_modulados)
+    tempo_sinal = np.linspace(0, duracao_sinal, 100)
+
+    tempo_total = np.linspace(0, duracao_sinal * quantidade_simbolos, quantidade_simbolos * 100)
+    onda = np.zeros(len(tempo_total), dtype=complex)
+
+    for idx, sinal in enumerate(sinais_modulados):
+        onda[idx * 100: (idx + 1) * 100] = sinal * np.exp(1j * 2 * np.pi * 8 * tempo_sinal)
+
+    return quantidade_simbolos, tempo_total, onda
+    
+
+
+
+    

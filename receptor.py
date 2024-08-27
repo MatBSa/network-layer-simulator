@@ -12,30 +12,20 @@ binary_message = None
 def ouvir_canal():
     global binary_message
     
-    # cria soquete
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # associa o soquete ao endereco e porta
-    st.markdown('associa o soquete ao endereco e porta')
-    server_socket.bind(('127.0.0.1', 65432))
-    # coloca em modo de escuta
-    st.markdown('coloca em modo escuta')
-    server_socket.listen(1)
-    print("Ouvindo canal")
-    st.markdown('Ouvindo canal')
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   # cria soquete
+    server_socket.bind(('127.0.0.1', 65432))                            # associa o soquete ao endereco e porta                               # coloca em modo de escuta
+    server_socket.listen(1)                                             # coloca em modo de escuta
+    print(f"Ouvindo canal, porta 65432")
     
     while True:
-        # aceita conexoes de entrada do transmissor e recebe os dados
-        conexao_socket, endpoint = server_socket.accept()
-        print(endpoint, 'Conexão estabelecida nesse endpoint')
-        #st.markdown(f'{endpoint}, Conexão estabelecida nesse endpoint')
-        # dados recebidos -> binary message em receptor(...)
-        dados = conexao_socket.recv(4096)  
-        binary_message = pickle.loads(dados)
-        print('Canal ouvido, msg recebida: ', binary_message, ' Enviando de volta')
-        #st.markdown(f'Canal ouvido: {binary_message}')
+        conexao_socket, endpoint = server_socket.accept()               # aceita conexoes de entrada do transmissor e recebe os dados
+        print(f'Conexão estabelecida em: {endpoint}')                   # dados recebidos -> binary message em receptor(...)
+        
+        dados = conexao_socket.recv(8192)  
+        binary_message = pickle.loads(dados)                            # sockets lida com bytes, desserializa
+        print(f'Mensagem recebida: {binary_message}')
 
-        # envia novamente os dados para o transmissor para confirmar recebimento e fecha a conexao
-        conexao_socket.send(pickle.dumps(pickle.loads(dados)))
+        conexao_socket.send(pickle.dumps(binary_message))          # envia novamente para transmissor e fecha conexao
         conexao_socket.close()
         
         
@@ -49,6 +39,8 @@ def inicia_servidor():
 def receptor(codificacao, enquadramento, erro):
     global binary_message
     
+    print(f'\n\nReceptor...')
+    
     # enquadramento
     if enquadramento == 'contagem de caracteres':
         quadros, bits_adicionais = get_char_count_frames_bits(binary_message)
@@ -58,30 +50,28 @@ def receptor(codificacao, enquadramento, erro):
         if erro != 'crc32':
             quadros, bits_adicionais = get_bit_insert_frames_bits(binary_message, crc=False)
         else:
-            quadros, bits_adicionais = get_char_count_frames_bits(binary_message)
+            quadros, bits_adicionais = get_bit_insert_frames_bits(binary_message)
+    
+    print(f'1. desenquadramento: {quadros, bits_adicionais}')
     
     # deteccao e correcao de erros
-    # mudar funcoes de crc e paridade para levar em conta bits adicionais, alem de inserir ajuste de quadros
     if erro == 'paridade':
-        bits_10, lista_de_erros = check_parity(quadros, bits_adicionais)
+        bits_10, erros = checar_paridade(quadros, bits_adicionais)
     elif erro == 'crc32':
-        bits_10, lista_de_erros = check_crc(quadros, bits_adicionais)
+        bits_10, erros = checar_crc32(quadros, bits_adicionais)
     elif erro == 'hamming':
-        bits_10, lista_de_erros = receive_hamming(quadros, bits_adicionais)
+        st.markdown('Hamming ainda não disponibilizado')
+        
+    print(f'2. Erros: {bits_10, erros}')
         
     # codificacao
     if codificacao == 'manchester':
-        tmp = []
-        for i in range(0, len(bits_10), 2):
-            if bits_10[i] == 0 and bits_10[i+1] == 1:
-                tmp = [0] + tmp
-            elif bits_10[i] == 1 and bits_10[i+1] == 0:
-                tmp = [1] + tmp
-        bits_10 = tmp
+        bits_2_a_2 = [bits_10[i:i+2] for i in range(0, len(bits_10), 2)]
+        bits_10 = [0 if bits == [0, 1] else 1 for bits in bits_2_a_2]
     
+    print(f'3. bits decodificados: {bits_10} e msg final a ser convert a texto')
     
-    #mensagem_recebida = text_conversor(bits_10)
-    mensagem_recebida = text_conversor(binary_message)
+    # erros
+    mensagem_recebida = text_conversor(bits_10)
     
-    #return binary_message, mensagem_recebida, ''.join(map(str, bits_10))
-    return binary_message, mensagem_recebida
+    return binary_message, mensagem_recebida, ''.join(map(str, bits_10))
