@@ -43,6 +43,7 @@ def qam8(bit_array, carrier_frequency=10, sampling_rate=100):
 
     return modulated_signal
 
+
 # Função para plotar o sinal 
 def plot_signal_8qam(data, signal, title='Signal', filename = 'signal.png'):
     t = np.linspace(0, len(data), len(signal), endpoint=False)
@@ -117,31 +118,33 @@ def text_conversor(binary_message):
 
 
 ######################### Amplitude Shift Keying (ASK) #########################
-def ask(bit_array, carrier_frequency=10, sampling_rate=100, amplitude_1=1, amplitude_0=0.5):
-    t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint=False)
-    carrier = np.sin(2 * np.pi * carrier_frequency * t)
-    modulated_signal = np.zeros(len(t))
-    
-    for i, bit in enumerate(bit_array):
-        if bit == '1':
-            modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = amplitude_1 * carrier[i * sampling_rate:(i + 1) * sampling_rate]
+def ask(carrier_freq, amplitude, binary_message, sampling_rate=100):  
+    modulated_signal = np.zeros(len(binary_message) * sampling_rate, dtype=float)
+
+    for i, bit in enumerate(binary_message):
+        if bit == 1:
+            for k in range(sampling_rate):
+                modulated_signal[i * sampling_rate + k] = amplitude * np.sin(2 * np.pi * carrier_freq * k / sampling_rate)
         else:
-            modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = amplitude_0 * carrier[i * sampling_rate:(i + 1) * sampling_rate]
-    
+            for k in range(sampling_rate):
+                modulated_signal[i * sampling_rate + k] = 0
+
     return modulated_signal
 
+
 ######################### Frequency Shift Keying (FSK) #########################
-def fsk(bit_array, carrier_frequency_0=10, carrier_frequency_1=20, sampling_rate=100):
-    t = np.linspace(0, len(bit_array), len(bit_array) * sampling_rate, endpoint=False)
-    modulated_signal = np.zeros(len(t))
+def fsk(carrier_freq_0, carrier_freq_1, amplitude, binary_message, sampling_rate=100):
+        modulated_signal = np.zeros(len(binary_message) * sampling_rate, dtype=float)
+
+        for i, bit in enumerate(binary_message):
+            if bit == 1:
+                for k in range(sampling_rate):
+                    modulated_signal[i * sampling_rate + k] = amplitude * np.sin(2 * np.pi * carrier_freq_0 * k / sampling_rate)
+            else:
+                for k in range(sampling_rate):
+                    modulated_signal[i* sampling_rate + k] = amplitude * np.sin(2 * np.pi * carrier_freq_1 * k / sampling_rate)
+
+        return modulated_signal
     
-    for i, bit in enumerate(bit_array):
-        if bit == '1':
-            carrier = np.sin(2 * np.pi * carrier_frequency_1 * t[i * sampling_rate:(i + 1) * sampling_rate])
-        else:
-            carrier = np.sin(2 * np.pi * carrier_frequency_0 * t[i * sampling_rate:(i + 1) * sampling_rate])
-        modulated_signal[i * sampling_rate:(i + 1) * sampling_rate] = carrier
-    
-    return modulated_signal
 
 
