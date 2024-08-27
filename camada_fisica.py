@@ -79,10 +79,9 @@ def bipolar_nrz(binary_message):
 # 0) converts a string message to an array of bits 1/0 (based on ascii byte char representation)
 def binary_conversor(message):
     binary_message = []
-    
-    for char in message:                    # each char
-        ascii = ord(char)                   # ascii decimal repr
-        byte = format(ascii, '08b')         # ascii dec -> binary (byte) repr
+    message = message.encode('utf8')
+    for char in message:                    # each char (ascii decimal)
+        byte = format(char, '08b')          # ascii dec -> binary (byte) repr
         bit_list = [int(bit) for bit in byte]  
         binary_message.extend(bit_list)     # put all in a single list
         
@@ -92,7 +91,7 @@ def binary_conversor(message):
 # 1) polar nrz digital modulation
 # 0 becomes -1 (-Voltage) while 1 stands as 1 (+Voltage)
 def polar_nrz(binary_message):
-    return [1 if bit == 1 else -1 for bit in binary_message]
+    return [bit if bit == 1 else -1 for bit in binary_message]
 
 
 # 2) manchester digital modulation

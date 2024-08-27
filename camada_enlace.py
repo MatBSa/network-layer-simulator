@@ -293,8 +293,18 @@ def receive_hamming(binary_message_with_parity, additional_bits_list):
 
     
 if __name__ == '__main__':
-    binary_message = binary_conversor('Hello World!')
-    print(binary_message == [0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
-    from camada_fisica import bipolar_nrz
-    bipolar_nrz_ = bipolar_nrz(binary_message)
-    print(bipolar_nrz_ == [0, 1, 0, 0, -1, 0, 0, 0, 0, 1, -1, 0, 0, 1, 0, -1, 0, 1, -1, 0, 1, -1, 0, 0, 0, 1, -1, 0, 1, -1, 0, 0, 0, 1, -1, 0, 1, -1, 1, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 1, 0, -1, 1, -1, 0, 1, -1, 0, 1, -1, 1, -1, 0, 1, -1, 1, 0, 0, -1, 0, 0, 1, -1, 0, 1, -1, 0, 0, 0, 1, -1, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1])
+    binary_message = binary_conversor('Olá')
+    from camada_fisica import polar_nrz, ask
+    print(binary_message)
+    mensagem_binaria = [
+    0, 1, 0, 0, 1, 1, 1, 1,  # "O"
+    0, 1, 1, 0, 1, 1, 0, 0,  # "l"
+    1, 1, 0, 0, 0, 0, 1, 1,  # "á" (primeiro byte em UTF-8)
+    1, 0, 1, 0, 0, 0, 0, 1   # "á" (segundo byte em UTF-8)
+]
+    print(binary_message == [0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1])
+    
+    
+    nrz = polar_nrz(binary_message)
+    print(nrz)
+    print(nrz == [-1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, -1, -1, -1, 1, 1, 1, -1, 1, -1, -1, -1, -1, 1])
