@@ -1,59 +1,56 @@
 import numpy as np
 from camada_fisica import binary_conversor, text_conversor
 
-# camada de enlace:
-#   1. permitir a comunicação eficiente transmissor-receptor
-#   2. recebe os pacotes da camada de rede -> encapsula em quadros para transmissão
-#   3. transferir dados da camada de rede origem - destino
-#   4. dividir o fluxo de bits em quadros distintos
-#   5. calcula o checksum p cada quadro
-#   6. incluir o checksum no quadro enviado
-# meio de comunicação possui empecilhos que tornam a comunicação mais complexa que enviar-receber
-# quadros:
-#   1. unidades de informação inteiras
-#   2. cabeçalho, campo de carga útil, final
 
+############################## camada de enlace ##############################
+# fornecer servicos a camada fisica:
+#   - recebe pacotes da camada de rede, os encapsula em quadros (cabecalho, carga util, final) para transmissao
+#   1. deteccao e correcao de erros
+#   2. regulacao do fluxo de dados
+#   3. fornecer interface bem definida a camada fisica
+
+
+############################## transmissor ##############################
+
+
+############################## enquadramento ##############################
 # contagem de caracteres:
 #   1. campo no cabeçalho especifica número de bytes no quadro (tamanho do quadro)
 #   2. camada de destino sabe quantos bytes o quadro contém - onde está o seu fim
  
-# divide a lista de bits em bytes 
-# loop continua até que bytes_list esteja vazio
-# calcula em cada loop o tamanho do quadro = min(n_bytes_restantes, tam_max_quadro - 1)
-# cria um quadro -> cabeçalho (tamanho do quadro em binario) e os bytes no quadro
-# quadro adicionada a uma matriz que os guarda - lista de quadros, cada quadro eh uma lista de str8bits
+# cada metodo abaixo:
+#   - realiza o enquadramento de acordo com o metodo e tamanho de quadro escolhido
+#   - retorna uma lista de quadros, em que cada quadro e uma lista com os bytes contidos em strings ['cabecalho', 'carga_util', 'final']
+# ex: quadros = [['01111110', '01011010', '01111110'], ['01111110', '01011010', '01111110'], ['01111110', '01011010', '01111110']]
+
+# contagem de caracteres 
+# adiciona no cabecalho o tamanho do quadro (numero de bytes)
+# 0. divide a lista de bits em bytes (ja em decimal)
+# 1. ate que a lista esvazie, indo de n_bytes_por_quadro em n_bytes_por_quadro
+# 2. calcula tamanho do quadro -> minimo(bytes restantes e n_bytes_por_quadro)
+#   - caso esteja restando menos bytes do que o tamanho de quadro definido, adiciona assim mesmo
+#   - depois adicionamos bits adicionais para tratar isso e garantir n_bits_totais divisivel por 8 por quadro
 def char_count(n_bytes_per_frame, binary_message):
     binary_message = ''.join(str(bit) for bit in binary_message)
     bytes = [int(binary_message[i:i+8], 2) for i in range(0, len(binary_message), 8)]
     frames = []
     
     for i in range(0, len(bytes), n_bytes_per_frame - 1):
+        if i > len(bytes):
+            break
         len_frame = min(len(bytes) - i, n_bytes_per_frame - 1)
-        # adds 1 to consider the header (character count method)
-        frame = [f"{format(len_frame + 1, '08b')}"] + [f"{format(byte, '08b')}" for byte in bytes[i:i + len_frame]]  # +1 for the header
+        frame = [f"{format(len_frame + 1, '08b')}"] + [f"{format(byte, '08b')}" for byte in bytes[i:i + len_frame]]  # +1 contando cabecalho
         frames.append(frame)
         
     return frames
 
-# BITS DE PREENCHIMENTO:
-# para evitar que a sequencia '0111110' seja confundida com uma flag, um bit extra (0) e inserido automaticamente apos uma sequencia de 5 1s consecutivos,
-# garantindo que a flag nunca apareca no quadro (carga util)
-# esses bits de preenchimento sao removidos no receptor para restaurar a mensagem original
 
-# inserção de bytes:
-#   0. contornar o problema de ressincronização após um erro de bit
-#   1. cada quadro começa e termina com um byte de flag
-#   2. ex: flag 1 2 3 flag flag 4 5 6 flag
-#   3. dois bytes de flag consecutivos indicam fim-inicio
-#   4. caso o receptor perca a sincronização basta procurar 
-#      dois bytes de flag consecutivos para encontrar o final 
-#      do quadro atual e o início do seguinte
-#   5. caso ocorra uma flag no campo de carga util (meio do quadro, bytes arm.)
-#      incluir caractere especial esc antes de cada byte de flag acidental
-#   6. caso ocorra esc no campo de carga util
-#      incluir caractere especial esc antes de cada esc acidental
-
-
+# insercao de bytes
+# insere bytes de flag no comeco e no fim de cada quadro - garantir ressincronizacao apos um erro de bit (problema da contagem de char)
+# 0. ate que a lista esteja vazia, de tamanho_quadro em tamanho_quadro
+# 1. o minimo garante que o tamanho maximo de cada quadro nao sera excedido
+#    o numero de bytes remanescentes no minimo garante que, mesmo que haja uma quantidade de bytes menor que a definida por quadro, eles sejam enquadrados
+# 2. enquadra bits como flag + bits_dos_bytes_do_quadro + flag 
 def byte_insert(n_bytes_per_frame, binary_message, flag='01111110'):
     binary_message = ''.join(str(bit) for bit in binary_message)
     bytes = [int(binary_message[i:i+8], 2) for i in range(0, len(binary_message), 8)]
@@ -61,15 +58,13 @@ def byte_insert(n_bytes_per_frame, binary_message, flag='01111110'):
     
     for i in range(0, len(bytes), n_bytes_per_frame - 2):
         # calcula o tamanho de cada quadro
-        # o minimo garante que o tamanho maximo de cada quadro nao sera excedido
-        # o numero de bytes remanescentes no minimo garante que, mesmo que haja uma
-        # quantidade de bytes menor que a definida por quadro, eles sejam enquadrados
+        
         if (n_bytes_per_frame - 2) < (len(bytes) - i):
             len_frame = n_bytes_per_frame - 2
         else:
             len_frame = len(bytes) - i
-        # adds 1 to consider the header (character count method)
-        frame = [flag] + [f"{format(byte, '08b')}" for byte in bytes[i:i + len_frame]]  + [flag] # +1 for the header
+
+        frame = [flag] + [f"{format(byte, '08b')}" for byte in bytes[i:i + len_frame]]  + [flag] 
         frames.append(frame)
         
     return frames
@@ -82,9 +77,14 @@ def byte_insert(n_bytes_per_frame, binary_message, flag='01111110'):
 #   4. essa sequência de bit especial é um byte de flag
 #   5. evitar a ocorrência da sequência de bits especiais na carga útil
 #   sempre que ocorre sequência de 5 bits '1', é inserido um bit '0' após ela
+
+# insercao de bits
+# contorna limitacao da insercao de bytes (fato de limitar-se em quadros multiplos de 8 (em numero de bits), com bytes de 8 bits)
+# cada quadro comeca e termina com flag
+# evitar flag na carga util -> a cada sequencia de 5 1s consecutivos, adiciona um 0
 def bit_insert(n_bits_per_frame, binary_message, flag='01111110'):
     frames = []
-    # percorre toda a binary_message, de n em n bits por quadro que queremos
+    # percorre toda a binary_message, de n_bits_por_quadro em n_bits_por_quadro que queremos
     for i in range(0, len(binary_message), n_bits_per_frame):
         # constroi o quadro transformando os n bits atuais que queremos (binary_message[i:i+n_bits_per_frame]) no quadro em uma string 
         # ja adiciona a flag no comeco e no fim do quadro
@@ -94,13 +94,17 @@ def bit_insert(n_bits_per_frame, binary_message, flag='01111110'):
     return frames
 
 
-# receptor -> receives from the transmitter a binary message to be decoded into text
-# in each function below, one per framing method, we remove the 'additional info' that are not part of the message itself, like flags and character counts
-# filter only the message of each frame
+############################## receptor ##############################
 
 
-# obtains each frame separately, removing their headers (which contains the number of bytes in the frame)
-# obtains a list containing the bits of each frame (concatenated in str, removing header - number of bytes in the frame) and the additional bits
+############################## desenquadrar ##############################
+
+
+# cada metodo abaixo:
+# 1. apos o enquadramento, obtem apenas a carga util de cada quadro, removendo flags e char counts
+# 2. retorna uma lista de quadros, em que cada quadro e uma string de bits (carga util daquele quadro)
+# 3. remove os bits adicionados para manter a multiplicidade por 8 e os retorna (em decimal)
+
 def get_char_count_frames_bits(binary_message):
     byte_units = [binary_message[i:i+8] for i in range(0, len(binary_message), 8)]
     bytes = [''.join(str(bit) for bit in byte) for byte in byte_units]
@@ -125,8 +129,7 @@ def get_char_count_frames_bits(binary_message):
 
     return str_frames_without_headers, additional_bits
 
-# obtain frames (without flags) and additional bits information
-# obtains a list containing the bits of each frame (concatenated in str, removing the flag delimiting each frame) and the additional bits
+
 def get_byte_insert_frames_bits(binary_message, flag='01111110'):
     str_frames_without_flags, additional_bits, frame = list(), list(), list()
     byte_units = [binary_message[i:i+8] for i in range(0, len(binary_message), 8)]
@@ -136,19 +139,17 @@ def get_byte_insert_frames_bits(binary_message, flag='01111110'):
         if byte != flag:
             frame.append(byte)
         else:
-            if frame:  
-                add_bits = int(frame[0], 2) # first byte of the frame (not being flag) will be the additional bits
+            if frame:                       # byte eh flag e frame nao esta vazio -> flag final
+                add_bits = int(frame[0], 2) # primeiro byte diferente de flag do quadro -> bits adicionais
                 additional_bits.append(add_bits)
                 
-                str_frame_without_flag = ''.join(frame[1:]) # then, we will have the frame bytes, converted into a unique string
+                str_frame_without_flag = ''.join(frame[1:]) # bytes do quadro -> string unica de bits do quadro
                 str_frames_without_flags.append(str_frame_without_flag)
                 frame.clear()        
 
     return str_frames_without_flags, additional_bits
 
 
-# obtain frames (without flags) and additional bits information
-# obtains a list containing the bits of each frame (concatenated in str, removing the flag in each frame) and the additional bits
 def get_bit_insert_frames_bits(binary_message, flag='01111110', crc=True):
     str_frames_without_flags, additional_bits, frame_bits = list(), list(), list()
     str_bits = [str(bit) for bit in binary_message]
@@ -157,30 +158,42 @@ def get_bit_insert_frames_bits(binary_message, flag='01111110', crc=True):
     i = 0                                           # para ir selecionando partes mais à frente na mensagem binária
     while i < len(bits):  
         
-        if bits[i:i+len(flag)] == flag:             # é flag?
+        if bits[i:i+len(flag)] == flag:             # e flag?
             i += len(flag)                          # selecionar os bits depois da flag (remover flag)
             
-            if frame_bits:                          # se o frame não estiver vazio (fim de quadro), adiciona ele na lista de frames
+            if frame_bits:                          # se o frame não estiver vazio (fim de quadro), adiciona ele na lista de frames (como string de bits)
                 str_frames_without_flags.append(''.join(frame_bits))
                 frame_bits = list()
                 
-            # verificar se frame está vazio (início de quadro, com flag)
+            # se temos flag e ja tem bytes na lista -> flag no meio 
             else:
-                if not crc:                         # se não tiver correção CRC, adic"iona zero
+                if not crc:                         # se não tiver correção CRC, adiciona zero
                     additional_bits.append(0)
-                else:                               # se tiver CRC, remove os 8 bits de preenchimento logo após uma flag de início de quadro
-                    add_bits = bits[i:i+8]          # pegar os próximos 8 bits de preenchimento
-                    add_bits = int(add_bits, 2)     # converte de binário para inteiro
+                else:                               # se tiver CRC, remove os 8 bits adicionais logo após uma flag de início de quadro
+                    add_bits = bits[i:i+8]          # pegar os próximos 8 bits de adicionais
+                    add_bits = int(add_bits, 2)     # converte de binário para inteiro decimal
                     additional_bits.append(add_bits)
-                    i += 8                          # avançar 8 bits após os bits de preenchimento
+                    i += 8                          # avançar 8 bits após os bits adicionais
         else:                      
             frame_bits.append(bits[i])
             i += 1                                  # avançar 1 bit
     
     return str_frames_without_flags, additional_bits
+
     
-######################### Parity Bit #########################
-quadros = [['01111110', '01011010', '01111110'], ['01111110', '01011010', '01111110'], ['01111110', '01011010', '01111110']]
+############################## deteccao de erros ##############################
+
+# em cada metodo abaixo:
+#   1. garantimos que os quadros tenham tamanho divisivel por 8 na carga util -> lidando com bytes em insercao de bytes (8 em 8) e contagem de caracteres
+#       - 1) resto da divisao do num bits da carga util por 8 -> quanto falta pra ser multiplo de 8 o num bits na carga
+#       - 2) 8 - quanto falta para ser multiplo de 8 o num bits na carga = num bits a adicionar para tornar multiplo de 8 o num bits na carga
+#       - 3) quanto falta % 8 = se for 8 ou 0 (resto 0) nao precisa adicionar nada, caso contrario adiciona no final [0] * quanto_falta (bits adicionais)
+#   2. funcoes de forma carga util obtem a carga util de acordo com o metodo e a flag (caso haja) -> 'forma_flag_carga_util_metodo'
+#   3. funcoes que adicionam bit de paridade e crc aos quadros ja com os bits adicionados para garantir a condicao acima (quadros_com_paridade_metodo e quadros_com_crc_metodo)
+#   4. integra-se tudo em funcoes que, com base no metodo de enquadramento escolhido, adicionam bit de paridade ou crc de acordo (aplicar_paridade_quadros e aplicar_crc_quadros)
+#   5. tudo isso usando funcoes menores que calculam paridade (generate_parity) e crc (calcula_crc32)
+#   6. por fim, checar_crc32 e checar_paridade retornam os quadros originais, sem bit de paridade e crc, e uma lista de erros booleanos
+#   OBS: no caso da insercao de bits apenas adiciona bit de paridade ou crc ao quadro, ja que podemos trabalhar com qualquer numero de bits no quadro
 
 def bits_a_adicionar_quadro_div_8(carga_util_c_paridade):
     # garantir que os quadros tenham um tamanho divisivel por 8 -> bits adicionais para completar numero divisivel por 8
@@ -273,6 +286,7 @@ def quadros_com_paridade_contagem_char(quadros):
     
     return quadros_com_paridade
         
+############################## calcular, aplicar e checar paridade - quadros ##############################
 
 def aplicar_paridade_quadros(enquadramento, quadros):
     if enquadramento == 'insercao de bytes':
@@ -364,7 +378,7 @@ def checar_paridade(quadros, bits_adicionais):
     return bits_quadro_carga_util, erros
 
 
-########################### CRC-32 ###########################
+############################## aplicar, gerar e checar crc32 - quadros ##############################
 def quadros_com_crc_insercao_bytes(quadros):
     quadros_com_crc = list()
     for quadro in quadros:
@@ -544,7 +558,7 @@ def checar_crc32(quadros, bits_adicionais, polinomio=format(0x104C11DB7, '033b')
 
 
 
-########################## HAMMING #########################
+########################## HAMMING - AINDA NAO DESENVOLVIDO #########################
 
 
 # TRANSMISSOR

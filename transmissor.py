@@ -5,7 +5,18 @@ from plot_functions import *
 import streamlit as st
 import pickle
 
+############################## transmissor - preparacao da mensagem a ser enviada ##############################
 
+
+# a partir de uma mensagem de texto, uma codificacao, um enquadramento, um erro e uma modulacao escolhida:
+#   1. converte o texto para binario -> binary_message [0, 1, 0, ...]
+#   2. aplica a codificacao desejada (nrz, bipolar, manchester) -> bits_codificados [1, 0, 1, ...]
+#   3. plota a mensagem codificada (nrz, bipolar, manchester) 
+#   4. enquadra de acordo com o metodo escolhido (contagem de caracteres, insercao de bytes, insercao de bits) -> quadros [['cabecalhoQ1', 'carga_utilQ1', 'finalQ1']]
+#   5. adiciona bits de paridade ou crc em cada um dos quadros -> aplicar_paridade_quadros, aplicar_crc_quadros -> quadros [['cabecalhoQ1', 'carga_utilQ1+Paridade', 'finalQ1']]
+#   6. gera uma unica mensagem binaria final apos todo enquadramento e metodo de erro -> final_binary_msg -> [1, 0, 0, ...] -> ENVIAR PARA RECEPTOR
+#   7. aplica a modulacao escolhida (ask, fsk, 8qam) a essa mensagem final -> plota -> sinal
+#   8. mensagem binaria a ser enviada -> string de bits -> final_binary_msg_str -> TRANSMITIR_DADOS(final_binary_msg_str)
 def transmissor(texto, codificacao, enquadramento, erro, modulacao):
     print('Transmissor iniciando...')
     
@@ -79,6 +90,13 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
     return binary_message, bits_codificados, sinal
 
 
+############################## transmissor - envio da mensagem (cliente socket) ##############################
+
+# estabelece o cliente socket (transmissor) com as propriedades de stream de bits (dados enviados)
+# conecta na porta e no host escolhido
+# serializa os dados (stream de bits) com pickle
+# recebe o que foi transmitido
+# fecha a conexao
 def transmitir_dados(dados):
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect(('127.0.0.1', 65432))

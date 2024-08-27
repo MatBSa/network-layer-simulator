@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
+############################## plotar bits codificados ##############################
+
+
 def plota_bits_codificados(bits_codificados, codificacao):
     # considera amplitudes de sinal +1/-1 para plotar, de digital 0/1 para sinal -v/v -> melhor de ler/representacao de simbolo eletrico
     simbolo = [1 if bit == 1 else 0 if bit == 0 else -1 for bit in bits_codificados]
@@ -12,16 +15,22 @@ def plota_bits_codificados(bits_codificados, codificacao):
     plt.figure(figsize=(20, 12))
     plt.title(f'Mensagem codificada em código {codificacao}')
     plt.step(np.arange(len(bits_codificados)), simbolo, where='post', linewidth=2)
+    
     # linha em y=0 e linhas de grade
     plt.axhline(y=0, color='black', linestyle='--', linewidth=0.5)
     plt.grid(True, which='both', linestyle='--', linewidth=0.5, color='black')
+    
     # marcacoes em y, rotulos e limites
     plt.yticks(ticks=[-1, 0, 1], labels=['-V', '0', 'V'])
     plt.ylim(-1.2, 1.2)
+    
     # remove marcacoes de x
     plt.xticks([])
     plt.savefig('images/bits_codificados.png')
     
+
+############################## plotar modulacoes ##############################
+
 
 def plota_modulacoes(sinal, modulacao):
     if modulacao == '8qam':
