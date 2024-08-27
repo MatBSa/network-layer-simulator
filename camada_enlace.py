@@ -293,7 +293,8 @@ def receive_hamming(binary_message_with_parity, additional_bits_list):
 
     
 if __name__ == '__main__':
-    print(text_conversor([0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]))
-    print('ZZZ')
-    # nao aplicar nenhuma codificacao nem nada, receber ZZZ la no receptor
-    
+    binary_message = binary_conversor('Hello World!')
+    print(binary_message == [0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+    from camada_fisica import bipolar_nrz
+    bipolar_nrz_ = bipolar_nrz(binary_message)
+    print(bipolar_nrz_ == [0, 1, 0, 0, -1, 0, 0, 0, 0, 1, -1, 0, 0, 1, 0, -1, 0, 1, -1, 0, 1, -1, 0, 0, 0, 1, -1, 0, 1, -1, 0, 0, 0, 1, -1, 0, 1, -1, 1, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 1, 0, -1, 1, -1, 0, 1, -1, 0, 1, -1, 1, -1, 0, 1, -1, 1, 0, 0, -1, 0, 0, 1, -1, 0, 1, -1, 0, 0, 0, 1, -1, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1])

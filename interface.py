@@ -5,6 +5,7 @@ from camada_fisica import *
 from camada_enlace import *
 from receptor import *
 from transmissor import *
+from plot_functions import *
 
 
 # carregar e exibir imagem
@@ -41,25 +42,39 @@ if st.button("Enviar mensagem"):
     print(f'Mensagem: {mensagem}, codificação: {codificacao}, enquadramento: {enquadramento}, erro: {erro}, modulação: {modulacao}')
     st.markdown(f'Mensagem: {mensagem}, codificação: {codificacao}, enquadramento: {enquadramento}, erro: {erro}, modulação: {modulacao}')
     
-    inicia_servidor()
+    # plota codificacao isoladamente (codificacao -> plot)
+    binary_message = binary_conversor(mensagem)
+    if codificacao == 'nrz':
+        bits_codificados = polar_nrz(binary_message)
+        plota_bits_codificados(bits_codificados, codificacao)
+    elif codificacao == 'bipolar':
+        bits_codificados = bipolar_nrz(binary_message)
+        plota_bits_codificados(bits_codificados, codificacao)
+    elif codificacao == 'manchester':
+        bits_codificados = manchester(binary_message)
+        plota_bits_codificados(bits_codificados, codificacao)
     
-    # text, encoding, modulation, framing, error_detection -> pars
-    # transmissor -> run -> result
+    # display na pagina
+    st.image('images/bits_codificados.png')
     
+        
+    
+    #inicia_servidor()
+        
     # aplica os metodos escolhidos e transmite pro receptor os dados
-    dados_transmitidos = transmissor(mensagem,
-                                     codificacao,
-                                     enquadramento,
-                                     erro,
-                                     modulacao)
+    #dados_transmitidos = transmissor(mensagem,
+    #                                 codificacao,
+    #                                 enquadramento,
+    #                                 erro,
+    #                                 modulacao)
 
-    print('Sinal transmitido', dados_transmitidos)
+    #print('Sinal transmitido', dados_transmitidos)
 
     # receber mensagem do transmissor 
-    #msg_rec_orig, msg_rec_bits, msg_rec_rexti = receptor(codificacao, enquadramento, erro)
-    msg_binaria, msg_recebida_texto = receptor(codificacao, enquadramento, erro)
-    print('Mensagem binaria recebida no receptor: ', msg_binaria)
-    print('Msg decodificada pelo receptor: ', msg_recebida_texto)
-    print('Sinal transmitido', dados_transmitidos)
-    #st.markdown('Msg decodificada pelo receptor: ', msg_recebida_texto)
+    # msg_rec_orig, msg_rec_bits, msg_rec_rexti = receptor(codificacao, enquadramento, erro)
+    #msg_binaria, msg_recebida_texto = receptor(codificacao, enquadramento, erro)
+    #print('Mensagem binaria recebida no receptor: ', msg_binaria)
+    #print('Msg decodificada pelo receptor: ', msg_recebida_texto)
+    #print('Sinal transmitido', dados_transmitidos)
+    #st.markdown(f'Msg decodificada pelo receptor: {msg_recebida_texto}')
 

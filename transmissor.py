@@ -43,8 +43,9 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
         quadros_pos_erro = generate_crc(quadros)
     elif erro == 'hamming':
         quadros_pos_erro = hamming(quadros)
-    print('Nenhum método de detecção/correção de erros  escolhido')
-    st.markdown('Nenhum método de detecção/correção de erros escolhido')
+    else:
+        print('Nenhum método de detecção/correção de erros  escolhido')
+        st.markdown('Nenhum método de detecção/correção de erros escolhido')
 
     #NOTE quadros_pos_erro momentaneo -> testar recebimento correto de 'ZZZ' no receptor. Aqui vamos mandar zzz em binario
     sinal = binary_message
@@ -73,6 +74,7 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
     
     #return binary_message, bits_codificados, sinal
     return sinal
+
 
 def transmitir_dados(dados):
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

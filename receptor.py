@@ -12,30 +12,20 @@ binary_message = None
 def ouvir_canal():
     global binary_message
     
-    # cria soquete
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # associa o soquete ao endereco e porta
-    st.markdown('associa o soquete ao endereco e porta')
-    server_socket.bind(('127.0.0.1', 65432))
-    # coloca em modo de escuta
-    st.markdown('coloca em modo escuta')
-    server_socket.listen(1)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   # cria soquete
+    server_socket.bind(('127.0.0.1', 65432))                            # associa o soquete ao endereco e porta                               # coloca em modo de escuta
+    server_socket.listen(1)                                             # coloca em modo de escuta
     print("Ouvindo canal")
-    st.markdown('Ouvindo canal')
     
     while True:
-        # aceita conexoes de entrada do transmissor e recebe os dados
-        conexao_socket, endpoint = server_socket.accept()
-        print(endpoint, 'Conexão estabelecida nesse endpoint')
-        #st.markdown(f'{endpoint}, Conexão estabelecida nesse endpoint')
-        # dados recebidos -> binary message em receptor(...)
+        conexao_socket, endpoint = server_socket.accept()               # aceita conexoes de entrada do transmissor e recebe os dados
+        print(f'Conexão estabelecida em: {endpoint}')                   # dados recebidos -> binary message em receptor(...)
+        
         dados = conexao_socket.recv(4096)  
-        binary_message = pickle.loads(dados)
-        print('Canal ouvido, msg recebida: ', binary_message, ' Enviando de volta')
-        #st.markdown(f'Canal ouvido: {binary_message}')
+        binary_message = pickle.loads(dados)                            # sockets lida com bytes, desserializa
+        print(f'Mensagem recebida: {binary_message}')
 
-        # envia novamente os dados para o transmissor para confirmar recebimento e fecha a conexao
-        conexao_socket.send(pickle.dumps(pickle.loads(dados)))
+        conexao_socket.send(pickle.dumps(pickle.loads(dados)))          # envia novamente para transmissor e fecha conexao
         conexao_socket.close()
         
         
@@ -61,7 +51,6 @@ def receptor(codificacao, enquadramento, erro):
             quadros, bits_adicionais = get_char_count_frames_bits(binary_message)
     
     # deteccao e correcao de erros
-    # mudar funcoes de crc e paridade para levar em conta bits adicionais, alem de inserir ajuste de quadros
     if erro == 'paridade':
         bits_10, lista_de_erros = check_parity(quadros, bits_adicionais)
     elif erro == 'crc32':
