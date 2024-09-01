@@ -58,7 +58,7 @@ def transmissor(texto, codificacao, enquadramento, erro, modulacao):
     elif erro == 'crc32':
         quadros_pos_erro = aplicar_crc_quadros(enquadramento, quadros)
     elif erro == 'hamming':
-        st.markdown('Hamming ainda não disponibilizado')
+        quadros_pos_erro = aplicar_frames_hamming(enquadramento, quadros)
     else:
         print('Nenhum método de detecção/correção de erros  escolhido')
         st.markdown('Nenhum método de detecção/correção de erros escolhido')

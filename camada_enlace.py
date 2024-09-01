@@ -558,7 +558,7 @@ def checar_crc32(quadros, bits_adicionais, polinomio=format(0x104C11DB7, '033b')
 
 
 
-########################## HAMMING - AINDA NAO DESENVOLVIDO #########################
+########################## HAMMING #########################
 
 
 # TRANSMISSOR
@@ -568,77 +568,60 @@ def checar_crc32(quadros, bits_adicionais, polinomio=format(0x104C11DB7, '033b')
 # 3. insere 0 nas posicoes dos bits de paridade inicialmente (posicoes que sao potencias de dois)
 # 4. para cada uma dessas potencias, calcula o seu bit de paridade (0/1) com base na soma XOR de todas as outras posicoes que influenciam-no
 
-def calcular_bit_paridade(array, potencia_de_dois):
-    # verificar todos os bits de dados que contribuem para a paridade dessa potencia_de_dois (posicao da respectiva potencia de dois)
-    # lógica do bit de paridade: soma XOR de todos os bits que influenciam
-    valor_paridade = 0        # armazenar a soma XOR de todos os bits que influenciam a paridade dessa potencia de dois
-    i = potencia_de_dois - 1  # converter para índice baseado em zero
-    
-    while i < len(array):
-        # seleciona blocos de bits que começam na posição 'i' e têm tamanho 'potencia_de_dois'
-        bloco = array[i:i + potencia_de_dois]
-        valor_paridade ^= sum(bloco)        # soma XOR sobre o bloco
-        i += 2 * potencia_de_dois           # pula para o próximo bloco relevante
-    
-    return valor_paridade % 2               # retorna 0 ou 1
+def gerar_codigo_hamming(bits_dados):
+    # Calcula o número de bits de paridade necessários
+    r = 0
+    while (2**r < len(bits_dados) + r + 1):
+        r += 1
 
+    codigo_hamming = [0] * (len(bits_dados) + r)
+    j = 0
+    for i in range(len(codigo_hamming)):
+        if (i + 1) & i == 0:  # Posições de paridade (1, 2, 4, 8, ...)
+            continue
+        codigo_hamming[i] = bits_dados[j]
+        j += 1
 
-def hamming(binary_message):
-    
-    # calcula o numero de bits de paridade necessarios: 2**r >= m + r + 1
-    num_parity_bits = 0
-    while (2 ** num_parity_bits) < (len(binary_message) + num_parity_bits + 1):
-        num_parity_bits += 1
-    
-    # insere zero inicialmente nas posicoes correspondentes a bits de paridade (potencias de dois)
-    parity_zero_filled = []
-    j = 0  # indice para bits de dados
-    k = 1  # posicao no array com bits de paridade
-    
-    for i in range(1, len(binary_message) + num_parity_bits + 1):
-        if i == 2 ** (k - 1):        # verifica se a posicao e uma potencia de dois
-            parity_zero_filled.append(0)
-            k += 1
-        else:
-            parity_zero_filled.append(binary_message[j])
-            j += 1
+    for i in range(r):
+        pos_paridade = 2**i
+        valor_paridade = 0
+        for j in range(pos_paridade - 1, len(codigo_hamming), 2 * pos_paridade):
+            valor_paridade ^= sum(codigo_hamming[j:j + pos_paridade])
+        codigo_hamming[pos_paridade - 1] = valor_paridade
 
+    return codigo_hamming
 
-    # para cada bit de paridade, calcula o seu valor (1 ou 0) e insere no array final
-    for i in range(num_parity_bits):
-        potencia_de_dois = 2 ** i           # potencia de dois correspondente à posição (bit de paridade 0 -> 2 ** 0 = 1)
-        bit_paridade = calcular_bit_paridade(parity_zero_filled, potencia_de_dois)
-        parity_zero_filled[potencia_de_dois - 1] = bit_paridade     # insere na posicao da potencia de dois (-1 para contar desde indice 0) o respectivo bit de paridade dessa potencia
-    
-    return parity_zero_filled
+def verificar_codigo_hamming(codigo_recebido):
+    # Calcula o número de bits de paridade necessários
+    r = 0
+    while (2**r < len(codigo_recebido)):
+        r += 1
 
+    pos_erro = 0
+    for i in range(r):
+        pos_paridade = 2**i
+        valor_paridade = 0
+        for j in range(pos_paridade - 1, len(codigo_recebido), 2 * pos_paridade):
+            valor_paridade ^= sum(codigo_recebido[j:j + pos_paridade])
+        if valor_paridade != 0:
+            pos_erro += pos_paridade
 
-# RECEPTOR
-def receive_hamming(binary_message_with_parity, additional_bits_list):
-    # numero de bits de paridade (r): 2**r >= m + r + 1
-    num_parity_bits = 0
-    while (2 ** num_parity_bits) < (len(binary_message_with_parity)):
-        num_parity_bits += 1
+    if pos_erro:
+        return False, pos_erro - 1
+    return True, -1
 
-    # inicializa a lista para armazenar os bits de paridade extraídos da mensagem
-    parity_bits = [0] * num_parity_bits
+def aplicar_frames_hamming(enquadramento, quadros):
+    if enquadramento == 'insercao de bits':
+        return [gerar_codigo_hamming(quadro) for quadro in quadros]
+    return quadros
 
-    # percorre a mensagem, verificando e ajustando os bits de paridade
-    for i in range(num_parity_bits):
-        potencia_de_dois = 2 ** i           # Calcula a posição da potência de dois (posição do bit de paridade)
-        bit_paridade_calculado = calcular_bit_paridade(binary_message_with_parity, potencia_de_dois)
-        parity_bits[i] = bit_paridade_calculado
-
-    # verifica se há algum erro na codificação de Hamming
-    erro_posicao = sum([bit * (2 ** idx) for idx, bit in enumerate(parity_bits)])
-
-    if erro_posicao == 0:
-        print("Sem erros.")
-    else:
-        print(f"Erro detectado na posição {erro_posicao}.")
-        # corrige o erro invertendo o bit na posição identificada
-        binary_message_with_parity[erro_posicao - 1] ^= 1
-        print(f"Erro corrigido na posição {erro_posicao}.")
-
-    # retorna a mensagem corrigida
-    return binary_message_with_parity
+def remover_frames_hamming(enquadramento, quadros):
+    if enquadramento == 'insercao de bits':
+        quadros_corrigidos = []
+        for quadro in quadros:
+            valido, pos_erro = verificar_codigo_hamming(quadro)
+            if not valido:
+                print(f"Erro de Hamming detectado na posição {pos_erro}")
+            quadros_corrigidos.append([bit for bit in quadro if bit != pos_erro])
+        return quadros_corrigidos
+    return quadros
