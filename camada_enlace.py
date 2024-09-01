@@ -623,25 +623,40 @@ def aplicar_frames_hamming(enquadramento, quadros):
 def quadros_com_hamming_insercao_bytes(quadros):
     quadros_com_hamming = list()
     for quadro in quadros:
-        carga_util_binary_lst = forma_flag_carga_util_insercao_bytes(quadro)
-        quadro_hamming = gerar_codigo_hamming(carga_util_binary_lst)
-        quadros_com_hamming.append(quadro_hamming)
+        flag_binary_lst, carga_util_binary_lst = forma_flag_carga_util_insercao_bytes(quadro)
+        carga_util_c_hamming = gerar_codigo_hamming(carga_util_binary_lst)
+
+        quadro_adicionado, bits_a_adicionar_binario = bits_a_adicionar_quadro_div_8(carga_util_c_hamming)
+
+        quadros_com_hamming.append(flag_binary_lst + quadro_adicionado + flag_binary_lst)
     return quadros_com_hamming
 
 def quadros_com_hamming_insercao_bits(quadros):
     quadros_com_hamming = list()
+
     for quadro in quadros:
-        carga_util_binary_lst = forma_flag_carga_util_insercao_bits(quadro)
-        quadro_hamming = gerar_codigo_hamming(carga_util_binary_lst)
-        quadros_com_hamming.append(quadro_hamming)
+        flag_binary_lst, carga_util_binary_lst = forma_flag_carga_util_insercao_bits(quadro)
+        carga_util_c_hamming = gerar_codigo_hamming(carga_util_binary_lst)
+        quadros_com_hamming.append(flag_binary_lst + carga_util_c_hamming + flag_binary_lst)
+        
     return quadros_com_hamming
 
 def quadros_com_hamming_contagem_char(quadros):
     quadros_com_hamming = list()
+
     for quadro in quadros:
         carga_util_binary_lst = forma_carga_util_contagem_char(quadro)
-        quadro_hamming = gerar_codigo_hamming(carga_util_binary_lst)
-        quadros_com_hamming.append(quadro_hamming)
+        carga_util_c_hamming = gerar_codigo_hamming(carga_util_binary_lst)
+
+        quadro_adicionado, bits_a_adicionar_binario = bits_a_adicionar_quadro_div_8(carga_util_c_hamming)
+        cabecalho_adicionado = [int(bit) for bit in bits_a_adicionar_binario]
+
+        tamanho_do_quadro = len(quadro_adicionado) // 8
+        tamanho_do_quadro_binario = format(tamanho_do_quadro + 2, '08b')
+        cabecalho_do_quadro_binary_lst = [int(bit) for bit in tamanho_do_quadro_binario]
+
+        quadros_com_hamming.append(cabecalho_do_quadro_binary_lst + cabecalho_adicionado + quadro_adicionado)
+
     return quadros_com_hamming
 
 def remover_frames_hamming(enquadramento, quadros):
