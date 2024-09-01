@@ -591,25 +591,6 @@ def gerar_codigo_hamming(bits_dados):
 
     return codigo_hamming
 
-def verificar_codigo_hamming(codigo_recebido):
-    # Calcula o número de bits de paridade necessários
-    r = 0
-    while (2**r < len(codigo_recebido)):
-        r += 1
-
-    pos_erro = 0
-    for i in range(r):
-        pos_paridade = 2**i
-        valor_paridade = 0
-        for j in range(pos_paridade - 1, len(codigo_recebido), 2 * pos_paridade):
-            valor_paridade ^= sum(codigo_recebido[j:j + pos_paridade])
-        if valor_paridade != 0:
-            pos_erro += pos_paridade
-
-    if pos_erro:
-        return False, pos_erro - 1
-    return True, -1
-
 def aplicar_frames_hamming(enquadramento, quadros):
     if enquadramento == 'insercao de bytes':
         return quadros_com_hamming_insercao_bytes(quadros)
@@ -659,13 +640,56 @@ def quadros_com_hamming_contagem_char(quadros):
 
     return quadros_com_hamming
 
-def remover_frames_hamming(enquadramento, quadros):
-    if enquadramento == 'insercao de bits':
-        quadros_corrigidos = []
-        for quadro in quadros:
-            valido, pos_erro = verificar_codigo_hamming(quadro)
-            if not valido:
-                print(f"Erro de Hamming detectado na posição {pos_erro}")
-            quadros_corrigidos.append([bit for bit in quadro if bit != pos_erro])
-        return quadros_corrigidos
-    return quadros
+def checar_hamming(quadros, bits_adicionais):
+    def find_len_redundant_bits(bit_array):
+        len_bit_array = len(bit_array)
+        i = 0
+        while (2**i) <= len_bit_array:
+            i += 1
+        return i
+
+    def calculate_parity_bit(bit_array, position):
+        temp_bit_array = bit_array[position-1:]
+        list_of_bits = []
+        jump = False
+        for i in range(0, len(bit_array), position):
+            if jump:
+                jump = False
+                continue
+            list_of_bits.extend(temp_bit_array[i:i+position])
+            jump = True
+        parity = list_of_bits[0]
+        list_of_bits = list_of_bits[1:]
+        for bit in list_of_bits:
+            parity ^= bit
+        return parity
+
+    def make_correction(bit_array):
+        len_redundant_bits = find_len_redundant_bits(bit_array)
+        error_position = 0
+        str_bin_correction = ""
+        for i in range(len_redundant_bits):
+            position = 2**i
+            parity = calculate_parity_bit(bit_array, position)
+            str_bin_correction += str(parity)
+        str_bin_correction = str_bin_correction[::-1]
+        try:
+            error_position = int(str_bin_correction, 2)
+        except ValueError:
+            error_position = 0
+        if error_position != 0:
+            error_position -= 1
+            bit_array[error_position] ^= 1
+        bit_array_corrected_cleaned = [bit_array[i] for i in range(len(bit_array)) if (i+1) not in [2**i for i in range(len_redundant_bits)]]
+        return bit_array_corrected_cleaned
+
+    erros, bits_quadro_carga_util = [], []
+    for quadro, bits_padding in zip(quadros, bits_adicionais):
+        if bits_padding != 0:
+            quadro = quadro[:-bits_padding]
+        bits_array = [int(bit) for bit in quadro]
+        bits_array_corrected = make_correction(bits_array)
+        bits_quadro_carga_util.extend(bits_array_corrected)
+        erros.append(False)  # Hamming corrige os erros, então sempre retorna False
+
+    return bits_quadro_carga_util, erros
