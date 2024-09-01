@@ -611,9 +611,38 @@ def verificar_codigo_hamming(codigo_recebido):
     return True, -1
 
 def aplicar_frames_hamming(enquadramento, quadros):
-    if enquadramento == 'insercao de bits':
-        return [gerar_codigo_hamming(quadro) for quadro in quadros]
-    return quadros
+    if enquadramento == 'insercao de bytes':
+        return quadros_com_hamming_insercao_bytes(quadros)
+    elif enquadramento == 'insercao de bits':
+        return quadros_com_hamming_insercao_bits(quadros)
+    elif enquadramento == 'contagem de caracteres':
+        return quadros_com_hamming_contagem_char(quadros)
+    else:
+        raise ValueError("Método de enquadramento desconhecido")
+
+def quadros_com_hamming_insercao_bytes(quadros):
+    quadros_com_hamming = list()
+    for quadro in quadros:
+        carga_util_binary_lst = forma_flag_carga_util_insercao_bytes(quadro)
+        quadro_hamming = gerar_codigo_hamming(carga_util_binary_lst)
+        quadros_com_hamming.append(quadro_hamming)
+    return quadros_com_hamming
+
+def quadros_com_hamming_insercao_bits(quadros):
+    quadros_com_hamming = list()
+    for quadro in quadros:
+        carga_util_binary_lst = forma_flag_carga_util_insercao_bits(quadro)
+        quadro_hamming = gerar_codigo_hamming(carga_util_binary_lst)
+        quadros_com_hamming.append(quadro_hamming)
+    return quadros_com_hamming
+
+def quadros_com_hamming_contagem_char(quadros):
+    quadros_com_hamming = list()
+    for quadro in quadros:
+        carga_util_binary_lst = forma_carga_util_contagem_char(quadro)
+        quadro_hamming = gerar_codigo_hamming(carga_util_binary_lst)
+        quadros_com_hamming.append(quadro_hamming)
+    return quadros_com_hamming
 
 def remover_frames_hamming(enquadramento, quadros):
     if enquadramento == 'insercao de bits':
