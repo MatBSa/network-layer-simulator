@@ -568,28 +568,55 @@ def checar_crc32(quadros, bits_adicionais, polinomio=format(0x104C11DB7, '033b')
 # 3. insere 0 nas posicoes dos bits de paridade inicialmente (posicoes que sao potencias de dois)
 # 4. para cada uma dessas potencias, calcula o seu bit de paridade (0/1) com base na soma XOR de todas as outras posicoes que influenciam-no
 
-def gerar_codigo_hamming(bits_dados):
-    # Calcula o número de bits de paridade necessários
-    r = 0
-    while (2**r < len(bits_dados) + r + 1):
-        r += 1
+def gerar_codigo_hamming(bit_array): # Apply the Hamming Code to the provided bit array.
+    def find_len_redundant_bits(len_bits): 
+        """Find the number of redundant bits required for a message of length len_bits."""
+        for i in range(len_bits):
+            if(2**i >= len_bits + i + 1):
+                return i			
+            
+    def insert_zeros_parity_position(bit_array): 
+        """Insert zeros in the parity positions."""
+        len_redudant_bits = find_len_redundant_bits(len(bit_array))
 
-    codigo_hamming = [0] * (len(bits_dados) + r)
-    j = 0
-    for i in range(len(codigo_hamming)):
-        if (i + 1) & i == 0:  # Posições de paridade (1, 2, 4, 8, ...)
-            continue
-        codigo_hamming[i] = bits_dados[j]
-        j += 1
+        for i in range(len_redudant_bits):
+            bit_array.insert((2**i)-1, 0)
 
-    for i in range(r):
-        pos_paridade = 2**i
-        valor_paridade = 0
-        for j in range(pos_paridade - 1, len(codigo_hamming), 2 * pos_paridade):
-            valor_paridade ^= sum(codigo_hamming[j:j + pos_paridade])
-        codigo_hamming[pos_paridade - 1] = valor_paridade
+        return bit_array		
 
-    return codigo_hamming
+    def calculate_parity_bit(bit_array, position): # position must be one of the power of 2 (1, 2, 4, 8, 16, ...)
+        """Calculate the parity bit for the given position."""
+        temp_bit_array = bit_array[position-1:]
+        list_of_bits = []
+        jump = False # jump must be started with False to collect the first bits of the bit_array according to the position
+        for i in range(0, len(bit_array), position):
+            if jump:
+                jump = False
+                continue
+
+            list_of_bits.extend(temp_bit_array[i:i+position]) # if i+position is greater than the length of the temp_bit_array, it will not be a problem because the slice will be until the end of the list
+            jump = True        
+
+        parity = list_of_bits[1] # The first bit is the parity bit itself
+        list_of_bits = list_of_bits[2:] # Remove the first bit because it is the 0 that was included
+
+        for bit in list_of_bits:
+            parity ^= bit
+
+        return parity				
+
+    def insert_parity_bits(bit_array):
+        """Return the bit array with the parity bits."""
+        len_redudant_bits = find_len_redundant_bits(len(bit_array))
+        bit_array = insert_zeros_parity_position(bit_array)
+
+        for i in range(len_redudant_bits):
+            position = (2**i)
+            bit_array[position-1] = calculate_parity_bit(bit_array, position) # position-1 because the list starts with index 0
+
+        return bit_array
+    
+    return insert_parity_bits(bit_array)
 
 def aplicar_frames_hamming(enquadramento, quadros):
     if enquadramento == 'insercao de bytes':
@@ -690,6 +717,6 @@ def checar_hamming(quadros, bits_adicionais):
         bits_array = [int(bit) for bit in quadro]
         bits_array_corrected = make_correction(bits_array)
         bits_quadro_carga_util.extend(bits_array_corrected)
-        erros.append(False)  # Hamming corrige os erros, então sempre retorna False
+        erros.append(False)
 
     return bits_quadro_carga_util, erros
