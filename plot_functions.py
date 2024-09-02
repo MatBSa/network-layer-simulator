@@ -56,6 +56,7 @@ def plota_modulacoes(sinal, modulacao):
         t = np.arange(len(sinal))
         # plot 
         plt.figure(figsize=(20, 12))
+        plt.title(f'Modulacao: {modulacao}')
         plt.step(t, sinal, where='post')
         plt.ylim([-1.5, 1.5])
         plt.grid(True)
