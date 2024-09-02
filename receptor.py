@@ -72,7 +72,7 @@ def receptor(codificacao, enquadramento, erro):
     elif erro == 'crc32':
         bits_10, erros = checar_crc32(quadros, bits_adicionais)
     elif erro == 'hamming':
-        st.markdown('Hamming ainda não disponibilizado')
+        bits_10, erros = checar_hamming(quadros, bits_adicionais)
         
     print(f'2. Erros: {bits_10, erros}')
         
